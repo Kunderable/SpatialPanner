@@ -28,6 +28,23 @@ void MultiCanvas::timerCallback()
     repaint();
 }
 
+juce::AffineTransform MultiCanvas::viewT() const
+{
+    return juce::AffineTransform::scale(zoom).translated(pan.x, pan.y);
+}
+juce::Point<float> MultiCanvas::toWorld(juce::Point<float> screen) const
+{
+    return screen.transformedBy(viewT().inverted());
+}
+void MultiCanvas::clampPan()
+{
+    const float W = (float)getWidth(), H = (float)getHeight();
+    if (zoom <= 1.f) { zoom = 1.f; pan = { 0.f, 0.f }; return; }
+    pan.x = juce::jlimit(W * (1.f - zoom), 0.f, pan.x);
+    pan.y = juce::jlimit(H * (1.f - zoom), 0.f, pan.y);
+}
+
+// paramToPixel / pixelToParam work in WORLD space (zoom applied via the paint transform)
 juce::Point<float> MultiCanvas::paramToPixel(float x, float y) const
 {
     return { (x + 1.f) * 0.5f * getWidth(), (1.f - y) * getHeight() };
@@ -57,24 +74,57 @@ int MultiCanvas::findTrackAt(juce::Point<float> p) const
 
 void MultiCanvas::mouseDown(const juce::MouseEvent& e)
 {
-    dragId = findTrackAt(e.position);
-    if (dragId >= 0 && dragId != selectedId) {
-        selectedId = dragId;
-        if (onTrackSelected) onTrackSelected(selectedId);
+    const auto world = toWorld(e.position);
+    dragId = findTrackAt(world);
+    if (dragId >= 0) {
+        if (dragId != selectedId) {
+            selectedId = dragId;
+            if (onTrackSelected) onTrackSelected(selectedId);
+        }
+    } else if (zoom > 1.f) {
+        // Empty space while zoomed → pan
+        panning = true;
+        lastPan = e.position;
     }
     updateStatus(); repaint();
 }
 void MultiCanvas::mouseDrag(const juce::MouseEvent& e)
 {
-    if (dragId < 0) return;
-    float x, y; pixelToParam(e.position, x, y);
-    GlobalSpatialRegistry::get().setPosition(dragId, x, y);
+    if (dragId >= 0) {
+        float x, y; pixelToParam(toWorld(e.position), x, y);
+        GlobalSpatialRegistry::get().setPosition(dragId, x, y);
+    } else if (panning) {
+        pan += (e.position - lastPan);
+        lastPan = e.position;
+        clampPan();
+        repaint();
+    }
 }
-void MultiCanvas::mouseUp(const juce::MouseEvent&) { dragId = -1; updateStatus(); }
+void MultiCanvas::mouseUp(const juce::MouseEvent&) { dragId = -1; panning = false; updateStatus(); }
 void MultiCanvas::mouseDoubleClick(const juce::MouseEvent& e)
 {
-    int id = findTrackAt(e.position);
-    if (id >= 0) GlobalSpatialRegistry::get().setPosition(id, 0.f, 0.f);
+    const auto world = toWorld(e.position);
+    int id = findTrackAt(world);
+    if (id >= 0) {
+        GlobalSpatialRegistry::get().setPosition(id, 0.f, 0.f);
+    } else {
+        // Double-click empty → reset zoom
+        zoom = 1.f; pan = { 0.f, 0.f };
+        repaint();
+    }
+}
+void MultiCanvas::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
+{
+    if (scopeMode) return;
+    const float delta = (w.deltaY != 0.f ? w.deltaY : w.deltaX);
+    if (std::abs(delta) < 1e-4f) return;
+
+    const auto worldUnder = toWorld(e.position);
+    zoom = juce::jlimit(1.f, 8.f, zoom * (1.f + delta * 0.18f));
+    // Keep the point under the cursor anchored
+    pan = e.position - worldUnder * zoom;
+    clampPan();
+    repaint();
 }
 
 // ─── Drawing ──────────────────────────────────────────────────────────────────
@@ -102,44 +152,25 @@ void MultiCanvas::drawBackground(juce::Graphics& g)
     for (int i = 1; i < 12; ++i) g.drawLine(w*i/12.f, 0, w*i/12.f, h, 0.5f);
     for (int i = 1; i <  8; ++i) g.drawLine(0, h*i/8.f, w, h*i/8.f, 0.5f);
 
-    // Centre axis — bright blue
-    for (int k = 3; k >= 1; --k) {
-        g.setColour(juce::Colour(0xff3a78d8).withAlpha(0.06f * k));
-        g.drawLine(w*.5f, 0, w*.5f, h, 1.5f + k*2.f);
-    }
-    g.setColour(juce::Colour(0xff4a8ce8));
-    g.drawLine(w*.5f, 0, w*.5f, h, 1.5f);
+    // Centre axis — subtle
+    g.setColour(juce::Colour(0xff2a4e82).withAlpha(0.55f));
+    g.drawLine(w*.5f, 0, w*.5f, h, 1.0f);
 
-    // ── Full perspective depth arcs (complete semicircles) ────────────────────
+    // ── Clean concentric depth rings (true semicircles from listener) ─────────
     const float cx = w*.5f, cy = h;
     const float halfPi = juce::MathConstants<float>::halfPi;
-    const int   nArcs  = 6;
+    const float maxR   = juce::jmin(w * 0.48f, h * 0.92f);
+    const int   nArcs  = 5;
     for (int i = 1; i <= nArcs; ++i) {
-        const float rx = w * 0.5f * (float)i / nArcs;
-        const float ry = (h * 0.96f) * (float)i / nArcs;
+        const float R = maxR * (float)i / (float)nArcs;
         juce::Path arc;
-        // Full top semicircle: left (-90°) → top (0°) → right (+90°)
-        arc.addCentredArc(cx, cy, rx, ry, 0.f, -halfPi, halfPi, true);
+        arc.addCentredArc(cx, cy, R, R, 0.f, -halfPi, halfPi, true);  // rx==ry → circle
 
-        // Soft glow (subtle)
-        for (int k = 2; k >= 1; --k) {
-            g.setColour(juce::Colour(0xff4a9cff).withAlpha(0.025f * k));
-            g.strokePath(arc, juce::PathStrokeType(1.0f + k*1.4f));
-        }
-        // Core line — nearer arcs brighter
-        const float coreA = juce::jlimit(0.18f, 0.55f, 0.20f + 0.07f * (nArcs - i));
-        g.setColour(juce::Colour(0xff4f93e0).withAlpha(coreA));
-        g.strokePath(arc, juce::PathStrokeType(1.0f));
-    }
-
-    // Distance labels along the centre (front→back)
-    g.setFont(juce::Font(juce::FontOptions(7.5f).withStyle("Bold")));
-    for (int i = 1; i <= nArcs - 1; ++i) {
-        const float ay = cy - (h * 0.96f) * (float)i / nArcs;
-        if (ay < 14) continue;
-        g.setColour(juce::Colour(0xff3a6aa8).withAlpha(0.6f));
-        g.drawText(juce::String(-i*3) + "dB", (int)(cx + 4), (int)(ay - 5), 34, 11,
-                   juce::Justification::centredLeft);
+        const float a = juce::jlimit(0.10f, 0.30f, 0.32f - 0.04f * i);
+        g.setColour(juce::Colour(0xff4a9cff).withAlpha(a * 0.35f));
+        g.strokePath(arc, juce::PathStrokeType(2.2f));
+        g.setColour(juce::Colour(0xff5aa0e0).withAlpha(a));
+        g.strokePath(arc, juce::PathStrokeType(0.9f));
     }
 
     // Edge labels (subtle)
@@ -473,6 +504,10 @@ void MultiCanvas::paint(juce::Graphics& g)
 {
     if (scopeMode) { drawVectorscope(g); return; }
 
+    // Apply zoom/pan to the whole scene
+    g.saveState();
+    g.addTransform(viewT());
+
     drawBackground(g);
     drawReference(g);
 
@@ -489,6 +524,21 @@ void MultiCanvas::paint(juce::Graphics& g)
 
     for (auto& t : sorted)
         drawTrack(g, t, t.id == hlId, anyLocked && t.id != hlId);
+
+    g.restoreState();
+
+    // Zoom indicator (screen space, not transformed)
+    if (zoom > 1.01f) {
+        g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
+        g.setColour(juce::Colour(0xff66ccff).withAlpha(0.8f));
+        g.drawText(juce::String(zoom, 1) + "x   (drag empty = pan · dbl-click = reset)",
+                   8, getHeight() - 18, getWidth() - 16, 14,
+                   juce::Justification::centredLeft);
+    }
+
+    // Outer border on top
+    g.setColour(juce::Colour(0xff180a40));
+    g.drawRect(getLocalBounds(), 1);
 }
 
 void MultiCanvas::updateStatus()

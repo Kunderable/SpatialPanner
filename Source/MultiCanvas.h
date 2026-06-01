@@ -13,6 +13,7 @@ public:
     void mouseDrag(const juce::MouseEvent&) override;
     void mouseUp(const juce::MouseEvent&) override;
     void mouseDoubleClick(const juce::MouseEvent&) override;
+    void mouseWheelMove(const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
     void timerCallback() override;
 
     // Set which track is "locked" (only this one can be dragged). -1 = all.
@@ -44,6 +45,16 @@ private:
     int  focusedId  = -1;
     float animPhase = 0.f;
     juce::String statusText;
+
+    // Zoom / pan (edit view)
+    float              zoom = 1.f;
+    juce::Point<float> pan  { 0.f, 0.f };
+    bool               panning = false;
+    juce::Point<float> lastPan;
+
+    juce::AffineTransform viewT() const;
+    juce::Point<float>    toWorld(juce::Point<float> screen) const;
+    void                  clampPan();
 
     juce::Image scopeImg;   // phosphor persistence buffer
 
