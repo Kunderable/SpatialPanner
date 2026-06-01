@@ -1,105 +1,72 @@
 # Spatial Panner
 
-A VST3 / AU plugin for **visual spatial mixing**. Place each track as a movable dot
-on a 2D stage — horizontal position sets **pan**, vertical position sets **depth**
-(distance attenuation, no reverb). Every instance of the plugin shares one global
-canvas, so from any track you can see and move **all** tracks at once.
+A VST3/AU plugin for mixing by placing tracks on a 2D stage instead of fiddling with
+separate pan and volume faders. Each track is a dot: move it left/right to pan, move it
+up/down to push it forward or back (back = quieter). Every instance of the plugin shares
+one canvas, so from any track you can see and drag every other track.
 
-Built with [JUCE 8](https://juce.com/) and CMake.
+Built with JUCE 8 and CMake.
 
-![Spatial Panner](docs/screenshot.png)
+## How it works
 
----
+You put an instance on each track you want to position. The horizontal axis is
+equal-power pan. The vertical axis is depth, applied as plain gain (front = 0 dB,
+back = up to -15 dB). There is no reverb on depth on purpose: moving a sound back just
+makes it more distant/quieter. There's also a per-track stereo width control (mid/side),
+drawn as an oval around the dot.
 
-## Why this exists
-
-Standard mixers expose pan and volume as separate faders per track, which makes it
-hard to *see* the stereo image as a whole. Spatial Panner turns mixing into a
-spatial, visual task:
-
-- One dot per track on a top-down "stage" (listener at the bottom-centre).
-- **X axis** → equal-power pan (L ↔ R).
-- **Y axis** → depth: front = full level, back = up to −15 dB quieter (pure gain,
-  no reverb — the source just moves "further away").
-- A **stereo-width** control per track (Mid/Side), shown as a glowing oval.
-- All plugin instances see each other through a shared in-process registry, so the
-  master (or any track) shows the entire mix layout.
-
----
+All instances talk to each other through a single in-process registry, so the canvas on
+any track shows the whole mix and lets you move any dot.
 
 ## Features
 
-| Area | What it does |
-|------|--------------|
-| **Multi-track canvas** | Every instance renders all registered tracks; drag any dot from anywhere. |
-| **Track list** | Sidebar lists all tracks; click to select/lock so only that one moves (others dim). |
-| **Auto track names** | Picks up the host track name via VST3 `updateTrackProperties`; editable manually. |
-| **dB meters** | Per-track L/R LED-segment meters with falling peak + latched peak (click to reset). |
-| **Correlation meter** | Real-time stereo correlation (−1…+1) of the selected track. |
-| **Vectorscope** | Phosphor-persistence polar scope (CRT style) of the selected track's stereo field. |
-| **Width sync** | The WIDTH slider drives the *selected* track and syncs across all instances. |
-| **Environment presets** | Studio / Club / Car / Phone — real DSP (reverb + multiband EQ) to audition how a mix translates. |
-| **Reference layouts** | Pro mixing-standard placements per genre (House, Techno, Trance, Rock, Hip-Hop, Orchestral, …) shown as ghost markers with suggested position **and** width. |
-| **Resizable UI** | Drag the window corner; the whole UI scales proportionally. |
-| **State persistence** | Pan / depth / width / name / environment saved with the project. |
-
----
+- One dot per track on a shared canvas, drag from anywhere.
+- Track list sidebar; click a track to lock it so only that one moves.
+- Track names picked up automatically from the host, editable by hand.
+- Per-track L/R meters with falling peak and a latched peak you can click to reset.
+- Stereo correlation meter for the selected track.
+- Vectorscope view (polar scope with phosphor-style trails).
+- Width slider that drives the selected track and stays in sync across instances.
+- Listening-environment presets (Studio/Club/Car/Phone) using reverb + EQ, to check how
+  a mix translates.
+- Genre reference layouts shown as ghost markers with suggested position and width.
+- Scroll-wheel zoom + pan for precise placement.
+- Resizable window.
+- Pan/depth/width/name/environment saved with the project.
 
 ## Build
 
-Requires CMake ≥ 3.22 and a C++17 compiler. JUCE is fetched automatically.
+Needs CMake 3.22+ and a C++17 compiler. JUCE is fetched automatically.
 
 ```bash
 cd SpatialPanner
-bash build.sh          # configures + builds Release (VST3, AU, Standalone)
+bash build.sh
 ```
 
-Artifacts land in `build/SpatialPanner_artefacts/Release/`.
+Output goes to `build/SpatialPanner_artefacts/Release/`.
 
-### Install (macOS)
+Install on macOS:
 
 ```bash
-cp -r "build/SpatialPanner_artefacts/Release/VST3/Spatial Panner.vst3"   ~/Library/Audio/Plug-Ins/VST3/
-cp -r "build/SpatialPanner_artefacts/Release/AU/Spatial Panner.component" ~/Library/Audio/Plug-Ins/Components/
+cp -r "build/SpatialPanner_artefacts/Release/VST3/Spatial Panner.vst3"    ~/Library/Audio/Plug-Ins/VST3/
+cp -r "build/SpatialPanner_artefacts/Release/AU/Spatial Panner.component"  ~/Library/Audio/Plug-Ins/Components/
 ```
 
 Then rescan plugins in your DAW.
 
----
+## Code layout
 
-## Architecture
+- `Source/PluginProcessor.*` - audio: equal-power pan, depth gain, M/S width, meters,
+  correlation, environment reverb/EQ, scope ring buffer. APVTS params: posX, posY, width.
+- `Source/GlobalSpatialRegistry.*` - process-wide singleton every instance registers
+  with, so all editors see the same tracks. Stores raw param/meter/scope pointers behind
+  an alive flag.
+- `Source/MultiCanvas.*` - the 2D stage: tracks, crosshairs, width ovals, depth rings,
+  vectorscope, reference overlay, zoom/pan, drag handling.
+- `Source/GenreData.h` - reference layouts per genre (positions + suggested widths).
+- `Source/PluginEditor.*` - the UI: title bar, track list, meter panel, correlation bar,
+  width slider, environment buttons, genre picker, window scaling.
 
-| File | Responsibility |
-|------|----------------|
-| `Source/PluginProcessor.{h,cpp}` | Audio: equal-power pan, depth gain, M/S width, meters, correlation, environment DSP (reverb + IIR EQ), scope ring buffer. APVTS params: `posX`, `posY`, `width`. |
-| `Source/GlobalSpatialRegistry.{h,cpp}` | Process-wide singleton. Every instance registers its params + meter/scope pointers + an `alive` flag. Provides thread-safe snapshots and change listeners so all editors stay in sync. |
-| `Source/MultiCanvas.{h,cpp}` | The 2D stage: draws all tracks, crosshairs, width ovals, perspective depth arcs, the vectorscope (phosphor buffer), and the reference ghost overlay. Handles drag/select. |
-| `Source/GenreData.h` | Reference layout tables — per-genre instrument positions + suggested widths. |
-| `Source/PluginEditor.{h,cpp}` | S1-Imager-style chrome: title bar, track list, right meter panel, correlation bar, WIDTH slider, environment buttons, animated genre picker (`GenrePanel`), UI scaling. |
-
-### Cross-instance sync
-
-There is no inter-process communication — all instances live in the host's process,
-so a single `GlobalSpatialRegistry` (Meyers singleton) is enough. The registry stores
-raw pointers to each processor's parameters and atomic meter/scope buffers, guarded by
-an `alive` flag set false in the destructor before deregistration, so editors never
-touch a dead processor.
-
-### Depth model
-
-`gain = dB→gain(−depth × 15 dB)`. Depth is **pure attenuation** (no reverb) — moving a
-track "back" simply makes it quieter, as if further from the listener.
-
-### Environment presets (audition modes)
-
-These are global "listening environment" simulations applied after the spatial stage:
-- **Studio** — light room, flat.
-- **Club** — large reverb, +bass shelf, mid scoop, air shelf.
-- **Car** — small boxy reverb, low/low-mid bumps, rolled-off highs.
-- **Phone** — 300 Hz–3.4 kHz band-pass.
-
----
-
-## License
-
-Personal project. JUCE is used under its own license terms.
+Because all instances live in the host process there's no IPC; the singleton registry is
+enough. Each processor clears its alive flag in the destructor before deregistering so
+editors never touch a dead instance.
