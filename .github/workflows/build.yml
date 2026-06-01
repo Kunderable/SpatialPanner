@@ -30,28 +30,47 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel 4
 
-      - name: Package (macOS)
+      - name: Package + installer (macOS)
         if: runner.os == 'macOS'
         run: |
           cd build/SpatialPanner_artefacts/Release
+          # Plain zip of the plugin bundles
           zip -r "$GITHUB_WORKSPACE/SpatialPanner-macOS.zip" VST3 AU Standalone
+          # .pkg installer that drops VST3 + AU into the system plug-in folders
+          mkdir -p pkgroot/Library/Audio/Plug-Ins/VST3 pkgroot/Library/Audio/Plug-Ins/Components
+          cp -R "VST3/Spatial Panner.vst3"      pkgroot/Library/Audio/Plug-Ins/VST3/
+          cp -R "AU/Spatial Panner.component"   pkgroot/Library/Audio/Plug-Ins/Components/
+          pkgbuild --root pkgroot \
+                   --identifier com.spatialtools.spatialpanner \
+                   --version 1.0.0 \
+                   --install-location / \
+                   "$GITHUB_WORKSPACE/SpatialPanner-macOS-Installer.pkg"
 
-      - name: Package (Windows)
+      - name: Package + installer (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           cd build/SpatialPanner_artefacts/Release
           Compress-Archive -Path VST3, Standalone -DestinationPath "$env:GITHUB_WORKSPACE/SpatialPanner-Windows.zip"
+          cd $env:GITHUB_WORKSPACE
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\windows.iss
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: SpatialPanner-${{ matrix.name }}
-          path: SpatialPanner-*.zip
+          path: |
+            SpatialPanner-*.zip
+            SpatialPanner-*.pkg
+            SpatialPanner-*Setup.exe
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: SpatialPanner-*.zip
+          files: |
+            SpatialPanner-*.zip
+            SpatialPanner-*.pkg
+            SpatialPanner-*Setup.exe
           generate_release_notes: true
