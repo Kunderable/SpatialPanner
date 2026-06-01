@@ -40,7 +40,7 @@ public:
     void setTrackName(const juce::String& name);
     juce::String getTrackName() const { return trackName; }
 
-    // Called from editor preset buttons — queues environment change
+    // Called from editor preset buttons - queues environment change
     void requestEnvironment(int mode);  // 0=Off 1=Studio 2=Club 3=Car 4=Phone
     int  getEnvironmentMode() const { return envModeRequested.load(); }
 

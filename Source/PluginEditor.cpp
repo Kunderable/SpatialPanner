@@ -1,9 +1,7 @@
 #include "PluginEditor.h"
 #include "GenreData.h"
 
-// ════════════════════════════════════════════════════════════════════════════
-//  GenrePanel — animated modal genre picker
-// ════════════════════════════════════════════════════════════════════════════
+// GenrePanel - animated modal genre picker
 namespace {
     const juce::Colour kgGlass   { 0xf2101424 };
     const juce::Colour kgCard    { 0xff141a2e };
@@ -60,7 +58,7 @@ void GenrePanel::resized()
     const int catCount = 2;
     const int perRow   = 4;
     const int chipW = 124, chipH = 34, gap = 10;
-    const int rowsE = 3, rowsB = 2;  // electronic 11→3 rows, band 8→2 rows
+    const int rowsE = 3, rowsB = 2;  // electronic 11->3 rows, band 8->2 rows
 
     const int cardW = perRow * chipW + (perRow + 1) * gap;
     const int cardH = 70 + (rowsE + rowsB) * (chipH + gap) + catCount * 30 + 30;
@@ -107,7 +105,7 @@ void GenrePanel::mouseDown(const juce::MouseEvent& e)
         hidePanel();
         return;
     }
-    // Click outside the card → close (clear)
+    // Click outside the card -> close (clear)
     if (!cardBounds.contains(e.getPosition()))
         hidePanel();
 }
@@ -194,9 +192,8 @@ void GenrePanel::paint(juce::Graphics& g)
     g.setOpacity(1.f);
 }
 
-// ════════════════════════════════════════════════════════════════════════════
 
-// ─── S1-inspired design constants ─────────────────────────────────────────────
+// S1-inspired design constants
 namespace
 {
     // Dimensions
@@ -239,7 +236,7 @@ namespace
         return juce::Colour(0xff33cc33);
     }
 
-    // ── Bevel / inset helpers ─────────────────────────────────────────────────
+    // Bevel / inset helpers
     void fillPanel(juce::Graphics& g, juce::Rectangle<int> r)
     {
         // Subtle top-to-bottom gradient for "raised panel" feel
@@ -274,7 +271,7 @@ namespace
     }
 }
 
-// ─── Constructor ──────────────────────────────────────────────────────────────
+// Constructor
 SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     SpatialPannerAudioProcessor& p)
     : AudioProcessorEditor(&p), processorRef(p)
@@ -287,7 +284,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     setSize(kW, kH);
     focusedTrackId = processorRef.registryId;
 
-    // ── Track list ────────────────────────────────────────────────────────────
+    // Track list
     addAndMakeVisible(trackList);
     trackList.refresh();
     trackList.onSelect = [this](int id) {
@@ -298,7 +295,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
         peakLatchL = peakLatchR = 0.f;
     };
 
-    // ── Canvas ────────────────────────────────────────────────────────────────
+    // Canvas
     addAndMakeVisible(canvas);
     canvas.onStatusChanged = [this]() {
         statusLabel.setText(canvas.getStatusText(), juce::dontSendNotification);
@@ -311,7 +308,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
         trackList.setSelectedId(id);
     };
 
-    // ── WIDTH slider (big, at bottom) ─────────────────────────────────────────
+    // WIDTH slider (big, at bottom)
     widthSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     widthSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 56, 22);
     // S1-style slider colours
@@ -330,7 +327,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
         GlobalSpatialRegistry::get().setWidth(focusedTrackId, (float)widthSlider.getValue());
     };
 
-    // ── Name editor ───────────────────────────────────────────────────────────
+    // Name editor
     nameEditor.setMultiLine(false);
     nameEditor.setText(processorRef.getTrackName(), false);
     nameEditor.setTextToShowWhenEmpty("Track name…", kDim);
@@ -343,7 +340,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     nameEditor.onTextChange = [this]() { processorRef.setTrackName(nameEditor.getText()); };
     addAndMakeVisible(nameEditor);
 
-    // ── Environment preset buttons ─────────────────────────────────────────────
+    // Environment preset buttons
     for (int i = 0; i < 4; ++i)
     {
         envBtns[i].setButtonText(kEnvNames[i]);
@@ -363,7 +360,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     activeEnvIdx = processorRef.getEnvironmentMode();
     updateEnvButtons();
 
-    // ── Vectorscope toggle ─────────────────────────────────────────────────────
+    // Vectorscope toggle
     scopeBtn.setButtonText("SCOPE");
     scopeBtn.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xff2e2e2e));
     scopeBtn.setColour(juce::TextButton::buttonOnColourId, kBlue.darker(0.3f));
@@ -380,7 +377,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     };
     addAndMakeVisible(scopeBtn);
 
-    // ── Reference layouts ───────────────────────────────────────────────────────
+    // Reference layouts
     refBtn.setButtonText("REF");
     refBtn.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xff2e2e2e));
     refBtn.setColour(juce::TextButton::textColourOffId,  kDim);
@@ -391,7 +388,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     };
     addAndMakeVisible(refBtn);
 
-    // ── Genre picker overlay ────────────────────────────────────────────────────
+    // Genre picker overlay
     addChildComponent(genrePanel);
     genrePanel.onPick = [this](juce::String genre) {
         refGenre = genre;
@@ -403,7 +400,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
         refBtn.setColour(juce::TextButton::textColourOffId, on ? kText : kDim);
     };
 
-    // ── Status ────────────────────────────────────────────────────────────────
+    // Status
     statusLabel.setFont(juce::Font(juce::FontOptions(9.5f)));
     statusLabel.setColour(juce::Label::textColourId, kDim);
     statusLabel.setJustificationType(juce::Justification::centredLeft);
@@ -491,7 +488,7 @@ void SpatialPannerAudioProcessorEditor::mouseDown(const juce::MouseEvent& e)
     }
 }
 
-// ─── Layout (scaled) ───────────────────────────────────────────────────────────
+// Layout (scaled)
 void SpatialPannerAudioProcessorEditor::resized()
 {
     uiScale = (float)getWidth() / (float)kW;
@@ -522,19 +519,19 @@ void SpatialPannerAudioProcessorEditor::resized()
     genrePanel.setBounds(getLocalBounds());
 }
 
-// ─── Paint ────────────────────────────────────────────────────────────────────
+// Paint
 void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
 {
     // Scale all base-coordinate drawing to the current window size
     g.addTransform(juce::AffineTransform::scale(uiScale));
 
-    // ── Body fill (S1 grey metal) ─────────────────────────────────────────────
+    // Body fill (S1 grey metal)
     juce::ColourGradient bodyGrad(kPanel.brighter(0.05f), 0.f, 0.f,
                                    kPanel.darker(0.08f),  0.f, (float)kH, false);
     g.setGradientFill(bodyGrad);
     g.fillRect(0, 0, kW, kH);
 
-    // ── Title bar (premium) ────────────────────────────────────────────────────
+    // Title bar (premium)
     {
         // Dark gradient base
         juce::ColourGradient tg(juce::Colour(0xff20242c), 0.f, 0.f,
@@ -563,7 +560,7 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         g.setColour(juce::Colour(0x22ffffff));
         g.drawLine(0.f, 0.5f, (float)kW, 0.5f, 1.f);
 
-        // ── Logo mark: glowing diamond ─────────────────────────────────────────
+        // Logo mark: glowing diamond
         const float lx = 18.f, ly = kTitleH * 0.5f, lr = 7.f;
         for (int k = 4; k >= 1; --k) {
             g.setColour(juce::Colour(0xff5aaaff).withAlpha(0.10f * k * pulse));
@@ -585,10 +582,10 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
                    juce::Justification::centredLeft);
     }
 
-    // ── Canvas inset screen ───────────────────────────────────────────────────
+    // Canvas inset screen
     drawScreenInset(g, { kCanvasX - 2, kMainY - 2, kCanvasW + 4, kMainH + 4 });
 
-    // ── Track list panel ──────────────────────────────────────────────────────
+    // Track list panel
     {
         auto lr = juce::Rectangle<int>(0, kMainY, kListW, kMainH);
         fillPanel(g, lr);
@@ -598,7 +595,7 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawLine((float)kListW, (float)kMainY, (float)kListW, (float)(kMainY+kMainH), 1.f);
     }
 
-    // ── Meter panel ───────────────────────────────────────────────────────────
+    // Meter panel
     {
         auto mr = juce::Rectangle<int>(kMeterX, kMainY, kMeterW, kMainH);
         fillPanel(g, mr);
@@ -607,7 +604,7 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawLine((float)kMeterX, (float)kMainY, (float)kMeterX, (float)(kMainY+kMainH), 1.f);
     }
 
-    // ── Width row ─────────────────────────────────────────────────────────────
+    // Width row
     {
         const int wY = kMainY + kMainH;
         fillPanel(g, { 0, wY, kW, kWidthH });
@@ -620,7 +617,7 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawText("WIDTH", 0, wY, 62, kWidthH, juce::Justification::centred);
     }
 
-    // ── Bottom row (name + corr) ───────────────────────────────────────────────
+    // Bottom row (name + corr)
     {
         const int bY = kMainY + kMainH + kWidthH;
         fillPanel(g, { 0, bY, kW, kBottomH });
@@ -632,7 +629,7 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         drawCorrelation(g, { 190, bY, kW - kMeterW - 190, kBottomH });
     }
 
-    // ── Status bar ────────────────────────────────────────────────────────────
+    // Status bar
     {
         g.setColour(kPanel.darker(0.1f));
         g.fillRect(0, kH-kStatusH, kW, kStatusH);
@@ -640,14 +637,14 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
         g.drawLine(0.f, (float)(kH-kStatusH), (float)kW, (float)(kH-kStatusH), 1.f);
     }
 
-    // ── Meter (drawn last so it's on top of panel fill) ───────────────────────
+    // Meter (drawn last so it's on top of panel fill)
     drawRightMeter(g, { kMeterX+1, kMainY+1, kMeterW-2, kMainH-2 });
 
-    // ── Outer border bevel ────────────────────────────────────────────────────
+    // Outer border bevel
     drawBevel(g, { 0, 0, kW, kH }, false);
 }
 
-// ─── Right meter ─────────────────────────────────────────────────────────────
+// Right meter
 void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
                                                         juce::Rectangle<int> b)
 {
@@ -658,7 +655,7 @@ void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
     g.setColour(kDim);
     g.drawText("OUTPUT", (int)bx, (int)by+2, (int)bw, 12, juce::Justification::centred);
 
-    // ── Latched peak readout (click to reset) ─────────────────────────────────
+    // Latched peak readout (click to reset)
     const float latch = juce::jmax(peakLatchL, peakLatchR);
     const float latchDb = latch > 0.f ? 20.f * std::log10(juce::jmax(1e-6f, latch)) : -99.f;
     const juce::String latchStr = latchDb < -60.f ? "-Inf" : (juce::String(latchDb, 1));
@@ -713,7 +710,7 @@ void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
         const float litN   = juce::jlimit(0.f, 1.f, norm);
 
         for (int s = 0; s < segs; ++s) {
-            const float frac = (float)(s + 1) / segs;        // 0..1 bottom→top
+            const float frac = (float)(s + 1) / segs;        // 0..1 bottom->top
             const float segY = scaleBot - (s + 1) * segH - s * segGap;
             juce::Colour c = frac > 0.90f ? juce::Colour(0xffff2a2a)
                            : frac > 0.72f ? juce::Colour(0xffffc020)
@@ -735,7 +732,7 @@ void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
             }
         }
 
-        // Peak hold marker — bright line + glow
+        // Peak hold marker - bright line + glow
         if (peak > 0.001f) {
             const float py = normToY(juce::jlimit(0.f, 1.f, peak));
             g.setColour(juce::Colours::white.withAlpha(0.4f));
@@ -763,7 +760,7 @@ void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
     g.drawText(dbStr, (int)bx, (int)scaleBot+15, (int)bw, 12, juce::Justification::centred);
 }
 
-// ─── Correlation ─────────────────────────────────────────────────────────────
+// Correlation
 void SpatialPannerAudioProcessorEditor::drawCorrelation(juce::Graphics& g,
                                                          juce::Rectangle<int> b)
 {

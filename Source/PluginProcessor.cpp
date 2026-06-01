@@ -76,7 +76,7 @@ void SpatialPannerAudioProcessor::requestEnvironment(int mode)
     envModeRequested.store(mode);
 }
 
-// ─── Environment DSP ──────────────────────────────────────────────────────────
+// Environment DSP
 
 void SpatialPannerAudioProcessor::configureEnvironment(int mode)
 {
@@ -92,12 +92,12 @@ void SpatialPannerAudioProcessor::configureEnvironment(int mode)
 
     switch (mode)
     {
-    case 1: // Studio — light room, flat EQ
+    case 1: // Studio - light room, flat EQ
         rp.roomSize = 0.30f; rp.damping = 0.60f;
         rp.wetLevel = 0.07f; rp.dryLevel = 1.0f;
         break;
 
-    case 2: // Club — large room, bass boost, mid scoop, air
+    case 2: // Club - large room, bass boost, mid scoop, air
         rp.roomSize = 0.85f; rp.damping = 0.22f;
         rp.wetLevel = 0.38f; rp.dryLevel = 1.0f;
         // Low shelf +5dB @ 90Hz
@@ -114,7 +114,7 @@ void SpatialPannerAudioProcessor::configureEnvironment(int mode)
         envFilterOn[2] = true;
         break;
 
-    case 3: // Car — small boxy room, bass resonance, rolled-off highs
+    case 3: // Car - small boxy room, bass resonance, rolled-off highs
         rp.roomSize = 0.22f; rp.damping = 0.82f;
         rp.wetLevel = 0.12f; rp.dryLevel = 1.0f;
         // Low shelf +3dB @ 90Hz
@@ -131,7 +131,7 @@ void SpatialPannerAudioProcessor::configureEnvironment(int mode)
         envFilterOn[2] = true;
         break;
 
-    case 4: // Phone — bandpass 300–3400Hz, tiny reverb
+    case 4: // Phone - bandpass 300–3400Hz, tiny reverb
         rp.roomSize = 0.10f; rp.damping = 0.90f;
         rp.wetLevel = 0.04f; rp.dryLevel = 1.0f;
         // High-pass @ 300Hz
@@ -170,7 +170,7 @@ void SpatialPannerAudioProcessor::applyEnvironment(float* L, float* R, int n)
     }
 }
 
-// ─── Audio ────────────────────────────────────────────────────────────────────
+// Audio
 
 void SpatialPannerAudioProcessor::prepareToPlay(double sr, int)
 {
@@ -260,7 +260,7 @@ void SpatialPannerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     correlation.store(correlation.load(std::memory_order_relaxed) * 0.88f + corr * 0.12f);
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// State
 
 void SpatialPannerAudioProcessor::getStateInformation(juce::MemoryBlock& dest)
 {

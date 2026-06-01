@@ -9,7 +9,7 @@ namespace GenreData
 {
     struct GenreDef { const char* category; const char* name; };
 
-    // Master list — grouped by category, shown in the picker.
+    // Master list - grouped by category, shown in the picker.
     inline const std::vector<GenreDef>& list()
     {
         static const std::vector<GenreDef> g = {
@@ -40,7 +40,7 @@ namespace GenreData
 
     inline std::vector<RP> forGenre(const juce::String& n)
     {
-        // ── House family ──────────────────────────────────────────────────────
+        // House family
         if (n == "House" || n == "Tech House")
             return {
                 {"Kick",  0.00f,0.04f}, {"Sub",   0.00f,0.09f}, {"Bass", 0.00f,0.14f},
@@ -116,7 +116,7 @@ namespace GenreData
                 {"Melody",0.00f,0.34f}, {"FX L",-0.85f,0.55f},{"FX R",0.85f,0.57f},
             };
 
-        // ── Band / song ───────────────────────────────────────────────────────
+        // Band / song
         if (n == "Pop")
             return {
                 {"Kick",  0.00f,0.05f}, {"Bass", 0.00f,0.12f}, {"Snare",0.00f,0.16f},

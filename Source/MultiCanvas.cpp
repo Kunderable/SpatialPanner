@@ -82,7 +82,7 @@ void MultiCanvas::mouseDown(const juce::MouseEvent& e)
             if (onTrackSelected) onTrackSelected(selectedId);
         }
     } else if (zoom > 1.f) {
-        // Empty space while zoomed → pan
+        // Empty space while zoomed -> pan
         panning = true;
         lastPan = e.position;
     }
@@ -108,7 +108,7 @@ void MultiCanvas::mouseDoubleClick(const juce::MouseEvent& e)
     if (id >= 0) {
         GlobalSpatialRegistry::get().setPosition(id, 0.f, 0.f);
     } else {
-        // Double-click empty → reset zoom
+        // Double-click empty -> reset zoom
         zoom = 1.f; pan = { 0.f, 0.f };
         repaint();
     }
@@ -127,7 +127,7 @@ void MultiCanvas::mouseWheelMove(const juce::MouseEvent& e, const juce::MouseWhe
     repaint();
 }
 
-// ─── Drawing ──────────────────────────────────────────────────────────────────
+// Drawing
 
 void MultiCanvas::drawBackground(juce::Graphics& g)
 {
@@ -152,11 +152,11 @@ void MultiCanvas::drawBackground(juce::Graphics& g)
     for (int i = 1; i < 12; ++i) g.drawLine(w*i/12.f, 0, w*i/12.f, h, 0.5f);
     for (int i = 1; i <  8; ++i) g.drawLine(0, h*i/8.f, w, h*i/8.f, 0.5f);
 
-    // Centre axis — subtle
+    // Centre axis - subtle
     g.setColour(juce::Colour(0xff2a4e82).withAlpha(0.55f));
     g.drawLine(w*.5f, 0, w*.5f, h, 1.0f);
 
-    // ── Clean concentric depth rings (true semicircles from listener) ─────────
+    // Clean concentric depth rings (true semicircles from listener)
     const float cx = w*.5f, cy = h;
     const float halfPi = juce::MathConstants<float>::halfPi;
     const float maxR   = juce::jmin(w * 0.48f, h * 0.92f);
@@ -164,7 +164,7 @@ void MultiCanvas::drawBackground(juce::Graphics& g)
     for (int i = 1; i <= nArcs; ++i) {
         const float R = maxR * (float)i / (float)nArcs;
         juce::Path arc;
-        arc.addCentredArc(cx, cy, R, R, 0.f, -halfPi, halfPi, true);  // rx==ry → circle
+        arc.addCentredArc(cx, cy, R, R, 0.f, -halfPi, halfPi, true);  // rx==ry -> circle
 
         const float a = juce::jlimit(0.10f, 0.30f, 0.32f - 0.04f * i);
         g.setColour(juce::Colour(0xff4a9cff).withAlpha(a * 0.35f));
@@ -222,7 +222,7 @@ void MultiCanvas::drawTrack(juce::Graphics& g, const TrackEntry& t,
     const float ovalH  = 6.f + peak * 2.5f;
     const juce::Colour col = dimmed ? t.colour.withAlpha(0.25f) : t.colour;
 
-    // ── Width indicator — bold, vivid glowing oval ────────────────────────────
+    // Width indicator - bold, vivid glowing oval
     // Outer soft glow (wide blurred halo)
     for (int gi = 3; gi >= 1; --gi) {
         const float gExp = gi * 3.f;
@@ -237,7 +237,7 @@ void MultiCanvas::drawTrack(juce::Graphics& g, const TrackEntry& t,
     g.setGradientFill(wg);
     g.fillEllipse(px-spread, py-ovalH, spread*2.f, ovalH*2.f);
 
-    // Double outline ring — bright + inner highlight
+    // Double outline ring - bright + inner highlight
     g.setColour(t.colour.brighter(0.5f).withAlpha(dimmed ? 0.30f : 1.0f));
     g.drawEllipse(px-spread, py-ovalH, spread*2.f, ovalH*2.f, selected?2.6f:1.8f);
     g.setColour(t.colour.brighter(0.9f).withAlpha(dimmed ? 0.15f : 0.6f));
@@ -265,13 +265,13 @@ void MultiCanvas::drawTrack(juce::Graphics& g, const TrackEntry& t,
         return;
     }
 
-    // ── Glow halo behind marker (subtle) ──────────────────────────────────────
+    // Glow halo behind marker (subtle)
     for (int i = selected?4:2; i >= 1; --i) {
         g.setColour(t.colour.withAlpha((uint8_t)((selected?16:8)*i)));
         g.fillEllipse(px-(r+i*4.f), py-(r+i*4.f), (r+i*4.f)*2.f, (r+i*4.f)*2.f);
     }
 
-    // ── Marker: rotating diamond/star target ──────────────────────────────────
+    // Marker: rotating diamond/star target
     const float rot = selected ? animPhase * 0.4f : 0.f;
 
     // Outer ring
@@ -323,7 +323,7 @@ void MultiCanvas::drawVectorscope(juce::Graphics& g)
 
     const juce::Colour glowCol = ft ? ft->colour : juce::Colour(0xff39d4ff);
 
-    // ── Phosphor persistence buffer ───────────────────────────────────────────
+    // Phosphor persistence buffer
     if (scopeImg.isNull() || scopeImg.getWidth() != W || scopeImg.getHeight() != H)
         scopeImg = juce::Image(juce::Image::ARGB, juce::jmax(1, W), juce::jmax(1, H), true);
 
@@ -372,7 +372,7 @@ void MultiCanvas::drawVectorscope(juce::Graphics& g)
         }
     }
 
-    // ── Composite: dark bg + phosphor image ───────────────────────────────────
+    // Composite: dark bg + phosphor image
     juce::ColourGradient bgGrad(juce::Colour(0xff05080f), cx, baseY,
                                  juce::Colour(0xff020308), 0.f, 0.f, true);
     g.setGradientFill(bgGrad);
@@ -380,7 +380,7 @@ void MultiCanvas::drawVectorscope(juce::Graphics& g)
 
     g.drawImageAt(scopeImg, 0, 0);
 
-    // ── Neon dome overlay (glow strokes) ──────────────────────────────────────
+    // Neon dome overlay (glow strokes)
     auto neonArc = [&](float rr, juce::Colour c, float baseWidth) {
         juce::Path arc;
         arc.addCentredArc(cx, baseY, rr, rr, 0.f,
@@ -467,7 +467,7 @@ void MultiCanvas::drawReference(juce::Graphics& g)
             ? rp.w
             : juce::jlimit(0.3f, 2.0f, 0.4f + std::abs(rp.x) * 1.1f + rp.y * 0.7f);
 
-        // ── Ghost width oval (shows recommended stereo width) ─────────────────
+        // Ghost width oval (shows recommended stereo width)
         const float spread = width * 36.f;
         const float ovalH  = 5.f;
         g.setColour(cyan.withAlpha(0.07f));

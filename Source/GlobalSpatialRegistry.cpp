@@ -51,7 +51,7 @@ void GlobalSpatialRegistry::sync(int id, float x, float y, float w)
     auto it = entries.find(id);
     if (it == entries.end()) return;
     it->second.posX = x; it->second.posY = y; it->second.width = w;
-    // No fire() here — audio thread calls this too often; canvas timer handles refresh
+    // No fire() here - audio thread calls this too often; canvas timer handles refresh
 }
 
 void GlobalSpatialRegistry::setName(int id, const juce::String& name)

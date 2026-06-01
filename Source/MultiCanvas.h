@@ -25,7 +25,7 @@ public:
     void setFocusedId(int id)  { focusedId = id; repaint(); }
     bool getScopeMode() const  { return scopeMode; }
 
-    // Reference overlay (pro mixing standards). w<0 → derive width heuristically.
+    // Reference overlay (pro mixing standards). w<0 -> derive width heuristically.
     struct RefPoint { juce::String label; float x, y; float w = -1.f; };
     void setReference(juce::String name, std::vector<RefPoint> pts)
     { refName = std::move(name); refPoints = std::move(pts); repaint(); }

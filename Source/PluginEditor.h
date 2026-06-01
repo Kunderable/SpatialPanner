@@ -3,7 +3,7 @@
 #include "PluginProcessor.h"
 #include "MultiCanvas.h"
 
-// ─── Track list sidebar ───────────────────────────────────────────────────────
+// Track list sidebar
 class TrackListPanel : public juce::Component
 {
 public:
@@ -76,7 +76,7 @@ private:
     static constexpr int kRowH = 26;
 };
 
-// ─── Animated genre picker overlay ─────────────────────────────────────────────
+// Animated genre picker overlay
 class GenrePanel : public juce::Component, private juce::Timer
 {
 public:
@@ -107,7 +107,7 @@ private:
     int  chipAt(juce::Point<int>) const;
 };
 
-// ─── Main Editor ─────────────────────────────────────────────────────────────
+// Main Editor
 class SpatialPannerAudioProcessorEditor
     : public juce::AudioProcessorEditor,
       public juce::Timer
