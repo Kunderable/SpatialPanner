@@ -3,13 +3,13 @@
 
 // GenrePanel - animated modal genre picker
 namespace {
-    const juce::Colour kgGlass   { 0xf2101424 };
-    const juce::Colour kgCard    { 0xff141a2e };
-    const juce::Colour kgChip    { 0xff1d2640 };
-    const juce::Colour kgChipHi  { 0xff3a6ad0 };
-    const juce::Colour kgAccent  { 0xff5aa8ff };
-    const juce::Colour kgText    { 0xffe0e8ff };
-    const juce::Colour kgDim     { 0xff7088b8 };
+    const juce::Colour kgGlass   { 0xc02b2b2d };   // dim scrim over the light UI
+    const juce::Colour kgCard    { 0xfff5f3ef };
+    const juce::Colour kgChip    { 0xffe7e4de };
+    const juce::Colour kgChipHi  { 0xffd9783f };
+    const juce::Colour kgAccent  { 0xffd9783f };
+    const juce::Colour kgText    { 0xff2b2b2d };
+    const juce::Colour kgDim     { 0xff8d8a85 };
 }
 
 GenrePanel::GenrePanel()
@@ -55,27 +55,37 @@ void GenrePanel::timerCallback()
 void GenrePanel::resized()
 {
     // Card centred, sized to content
-    const int catCount = 2;
-    const int perRow   = 4;
-    const int chipW = 124, chipH = 34, gap = 10;
-    const int rowsE = 3, rowsB = 2;  // electronic 11->3 rows, band 8->2 rows
+    const int perRow = 5;
+    const int chipW = 110, chipH = 28, gap = 8;
+    const int headH = 60, catGap = 24, padBottom = 22;
+
+    // First pass: measure total content height
+    int contentH = 0; juce::String c0;
+    int col0 = 0;
+    for (auto& c : chips) {
+        if (c.cat != c0) {
+            c0 = c.cat;
+            if (col0 != 0) { contentH += chipH + gap; col0 = 0; }
+            contentH += catGap + 18;          // header
+        }
+        if (col0 == 0) contentH += chipH + gap;
+        if (++col0 >= perRow) col0 = 0;
+    }
 
     const int cardW = perRow * chipW + (perRow + 1) * gap;
-    const int cardH = 70 + (rowsE + rowsB) * (chipH + gap) + catCount * 30 + 30;
-
+    const int cardH = headH + contentH + padBottom;
     cardBounds = { (getWidth() - cardW) / 2, (getHeight() - cardH) / 2, cardW, cardH };
 
-    // Lay out chips by category
+    // Second pass: place chips
     int x = cardBounds.getX() + gap;
-    int y = cardBounds.getY() + 64;
+    int y = cardBounds.getY() + headH;
     juce::String lastCat;
     int col = 0;
-    for (auto& c : chips)
-    {
+    for (auto& c : chips) {
         if (c.cat != lastCat) {
             lastCat = c.cat;
             if (col != 0) { y += chipH + gap; col = 0; }
-            y += 28;  // category header space
+            y += catGap + 18;
             x = cardBounds.getX() + gap;
         }
         c.bounds = { x, y, chipW, chipH };
@@ -212,62 +222,44 @@ namespace
     constexpr int kCanvasW = kW - kListW - kMeterW - 2;
     constexpr int kMeterX  = kW - kMeterW;
 
-    // S1-inspired grey metal palette
-    const juce::Colour kBg       { 0xff2d2d2d };   // overall body
-    const juce::Colour kPanel    { 0xff363636 };   // raised panels
-    const juce::Colour kDark     { 0xff1c1c1c };   // dark separators
-    const juce::Colour kHighlt   { 0xff525252 };   // bevel highlight
-    const juce::Colour kScreen   { 0xff08101e };   // scope background (dark navy)
-    const juce::Colour kText     { 0xffcccccc };   // normal text
-    const juce::Colour kDim      { 0xff888888 };   // dimmer text / labels
-    const juce::Colour kBlue     { 0xff4477cc };   // accent blue (like S1 scope)
-    const juce::Colour kBorder   { 0xff1a1a1a };
+    // Minimal flat LIGHT palette, warm amber accent
+    const juce::Colour kBg       { 0xffece9e4 };   // warm off-white body
+    const juce::Colour kPanel    { 0xfff5f3ef };   // light panel
+    const juce::Colour kDark     { 0xffe1ded7 };   // input / meter trough
+    const juce::Colour kHighlt   { 0xffd6d3cc };   // hairline / divider
+    const juce::Colour kScreen   { 0xffe7e4de };   // stage background
+    const juce::Colour kText     { 0xff2b2b2d };   // primary text
+    const juce::Colour kDim      { 0xff8d8a85 };   // labels / dim text
+    const juce::Colour kBlue     { 0xffd9783f };   // accent (warm amber/coral)
+    const juce::Colour kBorder   { 0xffd9d6cf };   // hairline border
 
-    static const char*        kEnvNames[4]   = { "Studio", "Club", "Car", "Phone" };
-    static const juce::Colour kEnvOn[4]      = {
-        juce::Colour(0xff44aaaa), juce::Colour(0xffcc4444),
-        juce::Colour(0xffccaa22), juce::Colour(0xff4466cc),
-    };
+    static const char* kEnvNames[4] = { "Studio", "Club", "Car", "Phone" };
 
     juce::Colour meterCol(float norm)
     {
-        if (norm > 0.92f) return juce::Colour(0xffee2222);
-        if (norm > 0.75f) return juce::Colour(0xffeebb11);
-        return juce::Colour(0xff33cc33);
+        if (norm > 0.92f) return juce::Colour(0xffd2452f);
+        return juce::Colour(0xffd9783f);
     }
 
-    // Bevel / inset helpers
+    // Flat fill + hairline helpers (no bevels)
     void fillPanel(juce::Graphics& g, juce::Rectangle<int> r)
     {
-        // Subtle top-to-bottom gradient for "raised panel" feel
-        juce::ColourGradient grad(kPanel.brighter(0.04f), (float)r.getX(), (float)r.getY(),
-                                   kPanel.darker(0.04f),  (float)r.getX(), (float)r.getBottom(), false);
-        g.setGradientFill(grad);
+        g.setColour(kPanel);
         g.fillRect(r);
     }
 
-    void drawBevel(juce::Graphics& g, juce::Rectangle<int> r, bool inset = false)
+    void drawBevel(juce::Graphics& g, juce::Rectangle<int> r, bool = false)
     {
-        // Top/left highlight, bottom/right shadow for raised look (reverse for inset)
-        const juce::Colour hi = inset ? kBorder  : kHighlt;
-        const juce::Colour sh = inset ? kHighlt  : kBorder;
-        g.setColour(hi);
-        g.drawLine((float)r.getX(),     (float)r.getY(),      (float)r.getRight(),(float)r.getY(),     1.f);
-        g.drawLine((float)r.getX(),     (float)r.getY(),      (float)r.getX(),   (float)r.getBottom(),1.f);
-        g.setColour(sh);
-        g.drawLine((float)r.getX(),     (float)r.getBottom(), (float)r.getRight(),(float)r.getBottom(),1.f);
-        g.drawLine((float)r.getRight(), (float)r.getY(),      (float)r.getRight(),(float)r.getBottom(),1.f);
+        g.setColour(kBorder);
+        g.drawRect(r, 1);
     }
 
     void drawScreenInset(juce::Graphics& g, juce::Rectangle<int> r)
     {
-        // Inset "screen" frame: outer raised bezel, inner screen fill
-        auto outer = r;
-        fillPanel(g, outer.expanded(2));
-        drawBevel(g, outer.expanded(2), false);  // outer raised bezel
         g.setColour(kScreen);
         g.fillRect(r);
-        drawBevel(g, r, true);                   // inner inset shadow
+        g.setColour(kBorder);
+        g.drawRect(r, 1);
     }
 }
 
@@ -312,13 +304,13 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     widthSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     widthSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 56, 22);
     // S1-style slider colours
-    widthSlider.setColour(juce::Slider::backgroundColourId,        juce::Colour(0xff1e1e1e));
-    widthSlider.setColour(juce::Slider::thumbColourId,             juce::Colour(0xff888888));
-    widthSlider.setColour(juce::Slider::trackColourId,             kBlue.darker(0.4f));
+    widthSlider.setColour(juce::Slider::backgroundColourId,        kDark);
+    widthSlider.setColour(juce::Slider::thumbColourId,             kBlue);
+    widthSlider.setColour(juce::Slider::trackColourId,             kBlue);
     widthSlider.setColour(juce::Slider::textBoxTextColourId,        kText);
-    widthSlider.setColour(juce::Slider::textBoxBackgroundColourId,  juce::Colour(0xff222222));
-    widthSlider.setColour(juce::Slider::textBoxOutlineColourId,     kBorder);
-    widthSlider.setRange(0.0, 2.0, 0.001);
+    widthSlider.setColour(juce::Slider::textBoxBackgroundColourId,  kBg);
+    widthSlider.setColour(juce::Slider::textBoxOutlineColourId,     kBg);
+    widthSlider.setRange(0.0, 4.0, 0.001);
     widthSlider.setValue(processorRef.apvts.getRawParameterValue("width")->load(),
                          juce::dontSendNotification);
     addAndMakeVisible(widthSlider);
@@ -332,7 +324,7 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     nameEditor.setText(processorRef.getTrackName(), false);
     nameEditor.setTextToShowWhenEmpty("Track name…", kDim);
     nameEditor.setFont(juce::Font(juce::FontOptions(11.f)));
-    nameEditor.setColour(juce::TextEditor::backgroundColourId,     juce::Colour(0xff202020));
+    nameEditor.setColour(juce::TextEditor::backgroundColourId,     kDark);
     nameEditor.setColour(juce::TextEditor::textColourId,           kText);
     nameEditor.setColour(juce::TextEditor::outlineColourId,        kBorder);
     nameEditor.setColour(juce::TextEditor::focusedOutlineColourId, kBlue);
@@ -344,11 +336,10 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
     for (int i = 0; i < 4; ++i)
     {
         envBtns[i].setButtonText(kEnvNames[i]);
-        // S1-style pushbutton look
-        envBtns[i].setColour(juce::TextButton::buttonColourId,   juce::Colour(0xff323232));
-        envBtns[i].setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xff3a3a3a));
+        envBtns[i].setColour(juce::TextButton::buttonColourId,   kPanel);
+        envBtns[i].setColour(juce::TextButton::buttonOnColourId, kBlue);
         envBtns[i].setColour(juce::TextButton::textColourOffId,  kDim);
-        envBtns[i].setColour(juce::TextButton::textColourOnId,   kText);
+        envBtns[i].setColour(juce::TextButton::textColourOnId,   kBg);
         envBtns[i].onClick = [this, i]() {
             const int newMode = (activeEnvIdx == i+1) ? 0 : (i+1);
             activeEnvIdx = newMode;
@@ -362,24 +353,20 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
 
     // Vectorscope toggle
     scopeBtn.setButtonText("SCOPE");
-    scopeBtn.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xff2e2e2e));
-    scopeBtn.setColour(juce::TextButton::buttonOnColourId, kBlue.darker(0.3f));
+    scopeBtn.setColour(juce::TextButton::buttonColourId,   kPanel);
     scopeBtn.setColour(juce::TextButton::textColourOffId,  kDim);
-    scopeBtn.setColour(juce::TextButton::textColourOnId,   kText);
     scopeBtn.setClickingTogglesState(false);
     scopeBtn.onClick = [this]() {
         scopeOn = !scopeOn;
         canvas.setScopeMode(scopeOn);
-        scopeBtn.setColour(juce::TextButton::buttonColourId,
-                           scopeOn ? kBlue.darker(0.3f) : juce::Colour(0xff2e2e2e));
-        scopeBtn.setColour(juce::TextButton::textColourOffId,
-                           scopeOn ? kText : kDim);
+        scopeBtn.setColour(juce::TextButton::buttonColourId, scopeOn ? kBlue : kPanel);
+        scopeBtn.setColour(juce::TextButton::textColourOffId, scopeOn ? kBg : kDim);
     };
     addAndMakeVisible(scopeBtn);
 
     // Reference layouts
     refBtn.setButtonText("REF");
-    refBtn.setColour(juce::TextButton::buttonColourId,   juce::Colour(0xff2e2e2e));
+    refBtn.setColour(juce::TextButton::buttonColourId,   kPanel);
     refBtn.setColour(juce::TextButton::textColourOffId,  kDim);
     refBtn.setClickingTogglesState(false);
     refBtn.onClick = [this]() {
@@ -395,9 +382,8 @@ SpatialPannerAudioProcessorEditor::SpatialPannerAudioProcessorEditor(
         applyReference(genre);
         const bool on = genre.isNotEmpty();
         refBtn.setButtonText(on ? genre.substring(0, 6).toUpperCase() : "REF");
-        refBtn.setColour(juce::TextButton::buttonColourId,
-                         on ? juce::Colour(0xff2a5a8a) : juce::Colour(0xff2e2e2e));
-        refBtn.setColour(juce::TextButton::textColourOffId, on ? kText : kDim);
+        refBtn.setColour(juce::TextButton::buttonColourId, on ? kBlue : kPanel);
+        refBtn.setColour(juce::TextButton::textColourOffId, on ? kBg : kDim);
     };
 
     // Status
@@ -417,10 +403,8 @@ void SpatialPannerAudioProcessorEditor::updateEnvButtons()
 {
     for (int i = 0; i < 4; ++i) {
         const bool on = (activeEnvIdx == i+1);
-        envBtns[i].setColour(juce::TextButton::buttonColourId,
-                             on ? kEnvOn[i].darker(0.5f) : juce::Colour(0xff2e2e2e));
-        envBtns[i].setColour(juce::TextButton::textColourOffId,
-                             on ? kEnvOn[i].brighter(0.3f) : kDim);
+        envBtns[i].setColour(juce::TextButton::buttonColourId, on ? kBlue : kPanel);
+        envBtns[i].setColour(juce::TextButton::textColourOffId, on ? kBg : kDim);
     }
 }
 
@@ -437,9 +421,10 @@ void SpatialPannerAudioProcessorEditor::timerCallback()
     bool  found = false;
     for (auto& t : GlobalSpatialRegistry::get().snapshot())
         if (t.id == focusedTrackId) {
-            if (t.meterL)      ml   = t.meterL->load();
-            if (t.meterR)      mr   = t.meterR->load();
-            if (t.correlation) corr = t.correlation->load();
+            const bool live = t.alive && t.alive->load();
+            if (live && t.meterL)      ml   = t.meterL->load();
+            if (live && t.meterR)      mr   = t.meterR->load();
+            if (live && t.correlation) corr = t.correlation->load();
             fWidth = t.width;
             found  = true;
             break;
@@ -525,61 +510,39 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
     // Scale all base-coordinate drawing to the current window size
     g.addTransform(juce::AffineTransform::scale(uiScale));
 
-    // Body fill (S1 grey metal)
-    juce::ColourGradient bodyGrad(kPanel.brighter(0.05f), 0.f, 0.f,
-                                   kPanel.darker(0.08f),  0.f, (float)kH, false);
-    g.setGradientFill(bodyGrad);
+    // Flat body
+    g.setColour(kBg);
     g.fillRect(0, 0, kW, kH);
 
-    // Title bar (premium)
+    // Title bar: flat, minimal
     {
-        // Dark gradient base
-        juce::ColourGradient tg(juce::Colour(0xff20242c), 0.f, 0.f,
-                                 juce::Colour(0xff15181e), 0.f, (float)kTitleH, false);
-        g.setGradientFill(tg);
+        // Slightly lifted title strip
+        g.setColour(kPanel);
         g.fillRect(0, 0, kW, kTitleH);
 
-        // Animated cyan/violet glow sweep moving across the title
-        const float sweepX = (0.5f + 0.5f * std::sin(uiPhase * 0.6f)) * kW;
-        juce::ColourGradient sweep(juce::Colour(0x004466cc), sweepX - 160.f, 0.f,
-                                    juce::Colour(0x004466cc), sweepX + 160.f, 0.f, false);
-        sweep.addColour(0.5, juce::Colour(0xff5a9cff).withAlpha(0.16f));
-        g.setGradientFill(sweep);
-        g.fillRect(0, 0, kW, kTitleH);
+        // Accent dot with a soft halo
+        const float lx = 18.f, ly = kTitleH * 0.5f;
+        g.setColour(kBlue.withAlpha(0.18f));
+        g.fillEllipse(lx - 7.f, ly - 7.f, 14.f, 14.f);
+        g.setColour(kBlue);
+        g.fillEllipse(lx - 3.5f, ly - 3.5f, 7.f, 7.f);
 
-        // Accent underline glow (animated brightness)
-        const float pulse = 0.55f + 0.45f * std::sin(uiPhase);
-        for (int k = 4; k >= 1; --k) {
-            g.setColour(juce::Colour(0xff4a9cff).withAlpha(0.06f * k * pulse));
-            g.drawLine(0.f, (float)kTitleH - (float)k, (float)kW, (float)kTitleH - (float)k, 1.f);
+        // Wordmark (letter-spaced) + subtitle
+        {
+            juce::GlyphArrangement ga;
+            ga.addLineOfText(juce::Font(juce::FontOptions(12.5f).withStyle("Bold")),
+                             "S P A T I A L   P A N N E R", 34.f, ly - 1.f);
+            g.setColour(kText);
+            ga.draw(g);
         }
-        g.setColour(juce::Colour(0xff5aaaff).withAlpha(0.5f + 0.3f * pulse));
-        g.drawLine(0.f, (float)kTitleH, (float)kW, (float)kTitleH, 1.5f);
-
-        // Top highlight
-        g.setColour(juce::Colour(0x22ffffff));
-        g.drawLine(0.f, 0.5f, (float)kW, 0.5f, 1.f);
-
-        // Logo mark: glowing diamond
-        const float lx = 18.f, ly = kTitleH * 0.5f, lr = 7.f;
-        for (int k = 4; k >= 1; --k) {
-            g.setColour(juce::Colour(0xff5aaaff).withAlpha(0.10f * k * pulse));
-            g.fillEllipse(lx - lr - k*2, ly - lr - k*2, (lr + k*2)*2.f, (lr + k*2)*2.f);
-        }
-        juce::Path dia; dia.addPolygon({lx, ly}, 4, lr, uiPhase * 0.5f);
-        juce::ColourGradient dg(juce::Colour(0xffaad4ff), lx-lr*.4f, ly-lr*.4f,
-                                 juce::Colour(0xff2a6cd0), lx+lr*.4f, ly+lr*.4f, false);
-        g.setGradientFill(dg); g.fillPath(dia);
-        g.setColour(juce::Colour(0xffd0e8ff)); g.fillEllipse(lx-1.5f, ly-1.5f, 3.f, 3.f);
-
-        // Plugin name
-        g.setFont(juce::Font(juce::FontOptions(14.f).withStyle("Bold")));
-        g.setColour(juce::Colour(0xffe8eeff));
-        g.drawText("SPATIAL PANNER", 34, 4, 220, kTitleH - 14, juce::Justification::centredLeft);
-        g.setFont(juce::Font(juce::FontOptions(7.5f)));
-        g.setColour(juce::Colour(0xff6a86b8));
-        g.drawText("S P A T I A L   M I X E R   ·   v1.0", 35, kTitleH - 15, 220, 12,
+        g.setFont(juce::Font(juce::FontOptions(8.f)));
+        g.setColour(kDim);
+        g.drawText("SPATIAL MIXER", 34, (int)ly + 3, 200, 12,
                    juce::Justification::centredLeft);
+
+        // Hairline under the title
+        g.setColour(kBorder);
+        g.drawLine(0.f, (float)kTitleH, (float)kW, (float)kTitleH, 1.f);
     }
 
     // Canvas inset screen
@@ -607,33 +570,33 @@ void SpatialPannerAudioProcessorEditor::paint(juce::Graphics& g)
     // Width row
     {
         const int wY = kMainY + kMainH;
-        fillPanel(g, { 0, wY, kW, kWidthH });
-        g.setColour(kDark);
-        g.drawLine(0.f, (float)wY, (float)kW, (float)wY, 1.5f);
-        g.setColour(kHighlt);
-        g.drawLine(0.f, (float)wY+1, (float)kW, (float)wY+1, 0.5f);
-        g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
+        g.setColour(kBg);
+        g.fillRect(0, wY, kW, kWidthH);
+        g.setColour(kBorder);
+        g.drawLine(0.f, (float)wY, (float)kW, (float)wY, 1.f);
+        g.setFont(juce::Font(juce::FontOptions(8.5f).withStyle("Bold")));
         g.setColour(kDim);
-        g.drawText("WIDTH", 0, wY, 62, kWidthH, juce::Justification::centred);
+        g.drawText("WIDTH", 14, wY, 62, kWidthH, juce::Justification::centredLeft);
     }
 
     // Bottom row (name + corr)
     {
         const int bY = kMainY + kMainH + kWidthH;
-        fillPanel(g, { 0, bY, kW, kBottomH });
-        g.setColour(kDark);
+        g.setColour(kBg);
+        g.fillRect(0, bY, kW, kBottomH);
+        g.setColour(kBorder);
         g.drawLine(0.f, (float)bY, (float)kW, (float)bY, 1.f);
-        g.setFont(juce::Font(juce::FontOptions(9.f).withStyle("Bold")));
+        g.setFont(juce::Font(juce::FontOptions(8.5f).withStyle("Bold")));
         g.setColour(kDim);
-        g.drawText("NAME", 0, bY, 50, kBottomH, juce::Justification::centred);
+        g.drawText("NAME", 14, bY, 50, kBottomH, juce::Justification::centredLeft);
         drawCorrelation(g, { 190, bY, kW - kMeterW - 190, kBottomH });
     }
 
     // Status bar
     {
-        g.setColour(kPanel.darker(0.1f));
+        g.setColour(kBg);
         g.fillRect(0, kH-kStatusH, kW, kStatusH);
-        g.setColour(kDark);
+        g.setColour(kBorder);
         g.drawLine(0.f, (float)(kH-kStatusH), (float)kW, (float)(kH-kStatusH), 1.f);
     }
 
@@ -653,110 +616,71 @@ void SpatialPannerAudioProcessorEditor::drawRightMeter(juce::Graphics& g,
     // Header
     g.setFont(juce::Font(juce::FontOptions(8.f).withStyle("Bold")));
     g.setColour(kDim);
-    g.drawText("OUTPUT", (int)bx, (int)by+2, (int)bw, 12, juce::Justification::centred);
+    g.drawText("OUTPUT", (int)bx, (int)by+4, (int)bw, 12, juce::Justification::centred);
 
     // Latched peak readout (click to reset)
     const float latch = juce::jmax(peakLatchL, peakLatchR);
     const float latchDb = latch > 0.f ? 20.f * std::log10(juce::jmax(1e-6f, latch)) : -99.f;
-    const juce::String latchStr = latchDb < -60.f ? "-Inf" : (juce::String(latchDb, 1));
+    const juce::String latchStr = latchDb < -60.f ? "-inf" : (juce::String(latchDb, 1));
 
-    peakResetBounds = { (int)bx + 6, (int)by + 14, (int)bw - 12, 16 };
-    g.setColour(juce::Colour(0xff141414));
-    g.fillRect(peakResetBounds);
-    g.setColour(latch > 0.92f ? juce::Colour(0xffee2222)
-              : latch > 0.75f ? juce::Colour(0xffeebb11)
-                              : juce::Colour(0xff66bb66));
-    g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
+    peakResetBounds = { (int)bx + 8, (int)by + 18, (int)bw - 16, 16 };
+    g.setColour(latch > 0.92f ? juce::Colour(0xffe85a4a) : kText);
+    g.setFont(juce::Font(juce::FontOptions(10.f).withStyle("Bold")));
     g.drawText(latchStr, peakResetBounds, juce::Justification::centred);
-    g.setColour(kBorder);
-    g.drawRect(peakResetBounds, 1);
 
-    const float scaleTop = by + 36.f;
-    const float scaleBot = by + bh - 32.f;
+    const float scaleTop = by + 40.f;
+    const float scaleBot = by + bh - 30.f;
     const float scaleH   = scaleBot - scaleTop;
 
     auto normToY = [&](float n) {
         return scaleBot - juce::jlimit(0.f, 1.f, n) * scaleH;
     };
 
-    // Scale marks (S1 style: tick marks + labels)
-    constexpr float kMarks[] = { 0.f, -3.f, -6.f, -12.f, -18.f, -24.f, -30.f };
-    g.setFont(juce::Font(juce::FontOptions(7.5f)));
+    // Faint scale ticks
+    constexpr float kMarks[] = { 0.f, -6.f, -12.f, -24.f, -48.f };
+    g.setFont(juce::Font(juce::FontOptions(7.f)));
     for (float db : kMarks) {
         const float y = normToY(juce::Decibels::decibelsToGain(db));
-        g.setColour(db == 0.f ? juce::Colour(0x88ee3333) : kDim.withAlpha(0.4f));
-        g.drawLine(bx+3.f, y, bx+bw-3.f, y, 0.5f);
-        g.setColour(kDim.withAlpha(0.55f));
+        g.setColour(kDim.withAlpha(0.28f));
         g.drawText(db==0.f ? "0" : juce::String((int)db),
-                   (int)bx+1, (int)y-5, (int)bw-2, 11, juce::Justification::centred);
+                   (int)bx+2, (int)y-5, (int)bw-4, 10, juce::Justification::centredRight);
     }
 
-    // Meter bars
-    const float mW = 12.f;
-    const float lx = bx + bw*0.5f - mW - 3.f;
-    const float rx = bx + bw*0.5f + 3.f;
+    // Thin smooth meter bars
+    const float mW = 5.f;
+    const float lx = bx + bw*0.5f - mW - 4.f;
+    const float rx = bx + bw*0.5f + 4.f;
 
-    // LED-segment meter with rounded inset trough and glowing active segments
     auto drawBar = [&](float x, float norm, float peak) {
-        // Inset trough
-        g.setColour(juce::Colour(0xff0a0a0c));
-        g.fillRoundedRectangle(x - 1.f, scaleTop - 1.f, mW + 2.f, scaleH + 2.f, 2.5f);
-        g.setColour(juce::Colour(0xff000000));
-        g.fillRoundedRectangle(x, scaleTop, mW, scaleH, 2.f);
-
-        const int   segs   = 26;
-        const float segGap = 1.4f;
-        const float segH   = (scaleH - segGap * (segs - 1)) / segs;
-        const float litN   = juce::jlimit(0.f, 1.f, norm);
-
-        for (int s = 0; s < segs; ++s) {
-            const float frac = (float)(s + 1) / segs;        // 0..1 bottom->top
-            const float segY = scaleBot - (s + 1) * segH - s * segGap;
-            juce::Colour c = frac > 0.90f ? juce::Colour(0xffff2a2a)
-                           : frac > 0.72f ? juce::Colour(0xffffc020)
-                                          : juce::Colour(0xff2ce05a);
-            if (frac <= litN) {
-                // glow
-                g.setColour(c.withAlpha(0.25f));
-                g.fillRoundedRectangle(x - 1.f, segY - 0.5f, mW + 2.f, segH + 1.f, 1.5f);
-                // lit segment
-                g.setColour(c);
-                g.fillRoundedRectangle(x, segY, mW, segH, 1.f);
-                // top sheen
-                g.setColour(juce::Colours::white.withAlpha(0.15f));
-                g.fillRect(x, segY, mW, segH * 0.4f);
-            } else {
-                // dim unlit segment
-                g.setColour(c.withAlpha(0.08f));
-                g.fillRoundedRectangle(x, segY, mW, segH, 1.f);
-            }
+        // Track
+        g.setColour(kDark);
+        g.fillRoundedRectangle(x, scaleTop, mW, scaleH, mW*0.5f);
+        // Fill
+        const float lh = juce::jlimit(0.f, 1.f, norm) * scaleH;
+        if (lh > 0.5f) {
+            g.setColour(meterCol(norm));
+            g.fillRoundedRectangle(x, scaleBot - lh, mW, lh, mW*0.5f);
         }
-
-        // Peak hold marker - bright line + glow
+        // Peak marker
         if (peak > 0.001f) {
-            const float py = normToY(juce::jlimit(0.f, 1.f, peak));
-            g.setColour(juce::Colours::white.withAlpha(0.4f));
-            g.fillRect(x - 1.f, py - 1.5f, mW + 2.f, 3.f);
-            g.setColour(juce::Colours::white);
-            g.fillRect(x, py - 1.f, mW, 1.8f);
+            g.setColour(kText.withAlpha(0.85f));
+            g.fillRect(x, normToY(juce::jlimit(0.f,1.f,peak)) - 0.75f, mW, 1.5f);
         }
     };
 
     drawBar(lx, meterLDisplay, peakLDisplay);
     drawBar(rx, meterRDisplay, peakRDisplay);
 
-    // L / R labels
-    g.setFont(juce::Font(juce::FontOptions(7.5f).withStyle("Bold")));
+    g.setFont(juce::Font(juce::FontOptions(7.f).withStyle("Bold")));
     g.setColour(kDim);
-    g.drawText("L", (int)lx, (int)scaleBot+3, (int)mW, 11, juce::Justification::centred);
-    g.drawText("R", (int)rx, (int)scaleBot+3, (int)mW, 11, juce::Justification::centred);
+    g.drawText("L", (int)lx-2, (int)scaleBot+4, (int)mW+4, 10, juce::Justification::centred);
+    g.drawText("R", (int)rx-2, (int)scaleBot+4, (int)mW+4, 10, juce::Justification::centred);
 
-    // dB numeric readout
     const float db = meterLDisplay > 0.f
         ? 20.f * std::log10(juce::jmax(1e-6f, meterLDisplay)) : -99.f;
-    const juce::String dbStr = db < -60.f ? "-Inf" : (juce::String(db,1)+"dB");
-    g.setFont(juce::Font(juce::FontOptions(8.5f)));
-    g.setColour(meterCol(meterLDisplay));
+    const juce::String dbStr = db < -60.f ? "-inf" : (juce::String(db,1));
+    g.setFont(juce::Font(juce::FontOptions(8.f)));
+    g.setColour(kDim);
     g.drawText(dbStr, (int)bx, (int)scaleBot+15, (int)bw, 12, juce::Justification::centred);
 }
 

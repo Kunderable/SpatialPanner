@@ -1,6 +1,6 @@
 #include "MultiCanvas.h"
 
-namespace { constexpr float kDotR = 9.f, kGrabR = 22.f; }
+namespace { constexpr float kGrabR = 22.f; }
 
 MultiCanvas::MultiCanvas()
 {
@@ -133,30 +133,28 @@ void MultiCanvas::drawBackground(juce::Graphics& g)
 {
     const float w = getWidth(), h = getHeight();
 
-    // Deep navy base with vertical gradient
-    juce::ColourGradient base(juce::Colour(0xff0a1426), 0.f, 0.f,
-                               juce::Colour(0xff05080f), 0.f, h, false);
+    // Light stage with a soft warm vertical gradient
+    juce::ColourGradient base(juce::Colour(0xffeeebe5), 0.f, 0.f,
+                               juce::Colour(0xffe4e0d9), 0.f, h, false);
     g.setGradientFill(base);
     g.fillRect(getLocalBounds());
 
-    // Subtle breathing radial glow centred on the listener (bottom-centre)
-    const float breathe = 0.5f + 0.5f * std::sin(animPhase * 0.8f);
-    juce::ColourGradient glow(
-        juce::Colour(0xff16335f).withAlpha(0.14f + 0.06f * breathe), w*.5f, h*1.05f,
-        juce::Colour(0x00000000), w*.5f, h*0.25f, true);
-    g.setGradientFill(glow);
+    // Gentle warm pool near the listener (bottom-centre)
+    juce::ColourGradient pool(juce::Colour(0x14d9783f), w*.5f, h*1.02f,
+                               juce::Colour(0x00d9783f), w*.5f, h*0.35f, true);
+    g.setGradientFill(pool);
     g.fillRect(getLocalBounds());
 
-    // Grid lines (subtle blue)
-    g.setColour(juce::Colour(0xff1c3052));
+    // Very subtle grid
+    g.setColour(juce::Colour(0xffdad7d0).withAlpha(0.6f));
     for (int i = 1; i < 12; ++i) g.drawLine(w*i/12.f, 0, w*i/12.f, h, 0.5f);
     for (int i = 1; i <  8; ++i) g.drawLine(0, h*i/8.f, w, h*i/8.f, 0.5f);
 
-    // Centre axis - subtle
-    g.setColour(juce::Colour(0xff2a4e82).withAlpha(0.55f));
+    // Centre axis
+    g.setColour(juce::Colour(0xffc8c4bc));
     g.drawLine(w*.5f, 0, w*.5f, h, 1.0f);
 
-    // Clean concentric depth rings (true semicircles from listener)
+    // Thin concentric depth rings (semicircles from listener)
     const float cx = w*.5f, cy = h;
     const float halfPi = juce::MathConstants<float>::halfPi;
     const float maxR   = juce::jmin(w * 0.48f, h * 0.92f);
@@ -164,22 +162,18 @@ void MultiCanvas::drawBackground(juce::Graphics& g)
     for (int i = 1; i <= nArcs; ++i) {
         const float R = maxR * (float)i / (float)nArcs;
         juce::Path arc;
-        arc.addCentredArc(cx, cy, R, R, 0.f, -halfPi, halfPi, true);  // rx==ry -> circle
-
-        const float a = juce::jlimit(0.10f, 0.30f, 0.32f - 0.04f * i);
-        g.setColour(juce::Colour(0xff4a9cff).withAlpha(a * 0.35f));
-        g.strokePath(arc, juce::PathStrokeType(2.2f));
-        g.setColour(juce::Colour(0xff5aa0e0).withAlpha(a));
-        g.strokePath(arc, juce::PathStrokeType(0.9f));
+        arc.addCentredArc(cx, cy, R, R, 0.f, -halfPi, halfPi, true);
+        g.setColour(juce::Colour(0xffceccc4));
+        g.strokePath(arc, juce::PathStrokeType(0.8f));
     }
 
-    // Edge labels (subtle)
-    g.setFont(juce::Font(juce::FontOptions(8.5f).withStyle("Italic")));
-    g.setColour(juce::Colour(0x40709ad0));
-    g.drawText("L",     2,        (int)h/2-6, 12, 13, juce::Justification::centred);
-    g.drawText("R",     (int)w-14,(int)h/2-6, 12, 13, juce::Justification::centred);
-    g.drawText("BACK",  (int)w/2-16, 3,       32, 11, juce::Justification::centred);
-    g.drawText("FRONT", (int)w/2-20,(int)h-13, 40, 11, juce::Justification::centred);
+    // Edge labels
+    g.setFont(juce::Font(juce::FontOptions(8.f).withStyle("Bold")));
+    g.setColour(juce::Colour(0xff9a978f));
+    g.drawText("L",     4,        (int)h/2-6, 12, 13, juce::Justification::centred);
+    g.drawText("R",     (int)w-16,(int)h/2-6, 12, 13, juce::Justification::centred);
+    g.drawText("BACK",  (int)w/2-16, 4,       32, 11, juce::Justification::centred);
+    g.drawText("FRONT", (int)w/2-20,(int)h-14, 40, 11, juce::Justification::centred);
 }
 
 void MultiCanvas::drawCrosshairs(juce::Graphics& g, const TrackEntry& t)
@@ -213,100 +207,51 @@ void MultiCanvas::drawTrack(juce::Graphics& g, const TrackEntry& t,
 {
     auto dot = paramToPixel(t.posX, t.posY);
     const float px = dot.x, py = dot.y;
-    const float r = selected ? kDotR + 1.f : kDotR;
-    const float ml = t.meterL ? juce::jlimit(0.f,1.f,t.meterL->load()) : 0.f;
-    const float mr = t.meterR ? juce::jlimit(0.f,1.f,t.meterR->load()) : 0.f;
-    const float peak   = (ml + mr) * 0.5f;
-    const float pulse  = selected ? (1.f + std::sin(animPhase) * 0.06f) : 1.f;
-    const float spread = t.width * 36.f * pulse + peak * 8.f;
-    const float ovalH  = 6.f + peak * 2.5f;
-    const juce::Colour col = dimmed ? t.colour.withAlpha(0.25f) : t.colour;
+    const float r = selected ? 6.f : 5.f;
+    const float spread = t.width * 36.f;
+    const float ovalH  = 5.f;
+    const juce::Colour col = dimmed ? t.colour.withAlpha(0.28f) : t.colour;
 
-    // Width indicator - bold, vivid glowing oval
-    // Outer soft glow (wide blurred halo)
-    for (int gi = 3; gi >= 1; --gi) {
-        const float gExp = gi * 3.f;
-        g.setColour(t.colour.withAlpha((uint8_t)(dimmed ? 4 : 14)));
-        g.fillEllipse(px-spread-gExp, py-ovalH-gExp*0.5f,
-                      (spread+gExp)*2.f, (ovalH+gExp*0.5f)*2.f);
-    }
-
-    // Strong radial fill
-    juce::ColourGradient wg(t.colour.withAlpha(dimmed ? 0.10f : 0.45f + peak*0.18f), px, py,
-                             t.colour.withAlpha(0.f), px - spread, py, true);
-    g.setGradientFill(wg);
+    // Width indicator: thin clean oval
+    g.setColour(col.withAlpha(dimmed ? 0.06f : 0.12f));
     g.fillEllipse(px-spread, py-ovalH, spread*2.f, ovalH*2.f);
-
-    // Double outline ring - bright + inner highlight
-    g.setColour(t.colour.brighter(0.5f).withAlpha(dimmed ? 0.30f : 1.0f));
-    g.drawEllipse(px-spread, py-ovalH, spread*2.f, ovalH*2.f, selected?2.6f:1.8f);
-    g.setColour(t.colour.brighter(0.9f).withAlpha(dimmed ? 0.15f : 0.6f));
-    g.drawEllipse(px-spread+1.5f, py-ovalH+1.5f, (spread-1.5f)*2.f, (ovalH-1.5f)*2.f, 0.8f);
-
-    // Bright horizontal axis through the oval
-    g.setColour(t.colour.brighter(0.6f).withAlpha(dimmed?0.20f:0.85f));
-    g.drawLine(px-spread, py, px+spread, py, selected?1.6f:1.1f);
-
-    // Bold end-caps with arrows
-    g.setColour(t.colour.brighter(0.7f).withAlpha(dimmed?0.30f:1.0f));
-    for (float sx : {px-spread, px+spread}) {
-        g.drawLine(sx, py-ovalH, sx, py+ovalH, selected?3.f:2.f);
-        float dir = (sx < px) ? 1.f : -1.f;
-        g.drawLine(sx, py, sx+dir*5.f, py-4.f, selected?2.2f:1.5f);
-        g.drawLine(sx, py, sx+dir*5.f, py+4.f, selected?2.2f:1.5f);
-    }
+    g.setColour(col.withAlpha(dimmed ? 0.25f : selected ? 0.9f : 0.55f));
+    g.drawEllipse(px-spread, py-ovalH, spread*2.f, ovalH*2.f, selected ? 1.4f : 1.0f);
+    // thin end caps
+    for (float sx : {px-spread, px+spread})
+        g.drawLine(sx, py-ovalH, sx, py+ovalH, selected ? 1.2f : 0.9f);
 
     if (dimmed) {
-        // Simple diamond marker
-        juce::Path d;
-        d.addPolygon({px, py}, 4, r*0.85f, juce::MathConstants<float>::pi/4.f);
-        g.setColour(col.withAlpha(0.45f));
-        g.fillPath(d);
+        g.setColour(col.withAlpha(0.5f));
+        g.fillEllipse(px-r*0.7f, py-r*0.7f, r*1.4f, r*1.4f);
         return;
     }
 
-    // Glow halo behind marker (subtle)
-    for (int i = selected?4:2; i >= 1; --i) {
-        g.setColour(t.colour.withAlpha((uint8_t)((selected?16:8)*i)));
-        g.fillEllipse(px-(r+i*4.f), py-(r+i*4.f), (r+i*4.f)*2.f, (r+i*4.f)*2.f);
+    // Soft drop shadow for depth
+    g.setColour(juce::Colour(0x18000000));
+    g.fillEllipse(px-r+0.6f, py-r+1.4f, r*2.f, r*2.f);
+
+    // Selection ring
+    if (selected) {
+        g.setColour(col.withAlpha(0.45f));
+        g.drawEllipse(px-r-3.f, py-r-3.f, (r+3.f)*2.f, (r+3.f)*2.f, 1.2f);
     }
 
-    // Marker: rotating diamond/star target
-    const float rot = selected ? animPhase * 0.4f : 0.f;
-
-    // Outer ring
-    g.setColour(t.colour.withAlpha(selected?0.9f:0.55f));
-    g.drawEllipse(px-r-2.f, py-r-2.f, (r+2.f)*2.f, (r+2.f)*2.f, selected?1.6f:1.1f);
-
-    // Filled diamond core with gradient
-    juce::Path diamond;
-    diamond.addPolygon({px, py}, 4, r, rot + juce::MathConstants<float>::pi/4.f);
-    juce::ColourGradient dg(t.colour.brighter(0.7f), px-r*.4f, py-r*.4f,
-                             t.colour.darker(0.5f),   px+r*.4f, py+r*.4f, false);
+    // Clean filled dot (donut on light bg) with a soft top highlight
+    juce::ColourGradient dg(col.brighter(0.18f), px, py-r,
+                             col.darker(0.12f),  px, py+r, false);
     g.setGradientFill(dg);
-    g.fillPath(diamond);
+    g.fillEllipse(px-r, py-r, r*2.f, r*2.f);
+    g.setColour(juce::Colour(0xffeeebe5));
+    g.fillEllipse(px-r*0.4f, py-r*0.4f, r*0.8f, r*0.8f);
+    g.setColour(col);
+    g.fillEllipse(px-r*0.2f, py-r*0.2f, r*0.4f, r*0.4f);
 
-    // Diamond edge
-    g.setColour(t.colour.brighter(0.3f).withAlpha(0.9f));
-    g.strokePath(diamond, juce::PathStrokeType(1.f));
-
-    // Bright centre pip (coloured, not pure white)
-    g.setColour(t.colour.brighter(0.9f));
-    g.fillEllipse(px-1.8f, py-1.8f, 3.6f, 3.6f);
-
-    // Drop line
-    g.setColour(t.colour.withAlpha((uint8_t)28));
-    g.drawLine(px, py+r+5.f, px, getHeight(), 0.7f);
-
-    // Label pill
+    // Label
     const float lx = juce::jlimit(2.f, getWidth()-54.f, px-24.f);
-    const float ly = py+r+8.f;
-    g.setColour(juce::Colour(0xcc050e1a));
-    g.fillRoundedRectangle(lx-2.f, ly-1.f, 52.f, 13.f, 3.f);
-    g.setColour(t.colour.withAlpha(0.4f));
-    g.drawRoundedRectangle(lx-2.f, ly-1.f, 52.f, 13.f, 3.f, 0.6f);
-    g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
-    g.setColour(t.colour.brighter(0.5f));
+    const float ly = py+r+5.f;
+    g.setFont(juce::Font(juce::FontOptions(9.f).withStyle("Bold")));
+    g.setColour(col.withAlpha(0.85f));
     g.drawText(t.label, (int)lx, (int)ly, 52, 12, juce::Justification::centred);
 }
 
@@ -340,7 +285,8 @@ void MultiCanvas::drawVectorscope(juce::Graphics& g)
         ig.setColour(juce::Colours::black.withAlpha(0.18f));
         ig.fillRect(scopeImg.getBounds());
 
-        if (ft && ft->scopeL && ft->scopeR && ft->scopePos && ft->scopeSize > 0)
+        if (ft && ft->alive && ft->alive->load()
+            && ft->scopeL && ft->scopeR && ft->scopePos && ft->scopeSize > 0)
         {
             const int      N  = ft->scopeSize;
             const uint32_t wp = ft->scopePos->load(std::memory_order_acquire);
@@ -449,54 +395,112 @@ void MultiCanvas::drawReference(juce::Graphics& g)
     if (refPoints.empty()) return;
 
     const float w = getWidth(), h = getHeight();
-    const juce::Colour cyan(0xff66ccff);
+    const juce::Colour cyan(0xff2f8a9c);
 
     // Banner
     g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
-    g.setColour(cyan.withAlpha(0.8f));
+    g.setColour(cyan.withAlpha(0.9f));
     g.drawText("REFERENCE: " + refName + "   (ghost = suggested position + width)",
                8, 6, (int)w - 16, 14, juce::Justification::centredLeft);
 
-    for (auto& rp : refPoints)
+    // Merge "X L"/"X R" pairs into a single wide centred element ("X <>")
+    std::vector<RefPoint> merged;
+    std::vector<bool> used(refPoints.size(), false);
+    for (size_t i = 0; i < refPoints.size(); ++i)
+    {
+        if (used[i]) continue;
+        const auto& a = refPoints[i];
+        bool paired = false;
+        if (a.label.endsWith(" L") || a.label.endsWith(" R"))
+        {
+            const juce::String base = a.label.dropLastCharacters(2);
+            const juce::String other = base + (a.label.endsWith(" L") ? " R" : " L");
+            for (size_t j = i + 1; j < refPoints.size(); ++j)
+            {
+                if (used[j] || refPoints[j].label != other) continue;
+                const auto& b = refPoints[j];
+                const float spreadX = juce::jmax(std::abs(a.x), std::abs(b.x));
+                RefPoint m;
+                m.label = base + " <>";
+                m.x = 0.f;
+                m.y = (a.y + b.y) * 0.5f;
+                m.w = juce::jlimit(0.3f, 2.0f, spreadX * 2.0f + 0.5f);
+                merged.push_back(m);
+                used[i] = used[j] = true;
+                paired = true;
+                break;
+            }
+        }
+        if (!paired) { merged.push_back(a); used[i] = true; }
+    }
+
+    struct Ghost { float px, py, spread, width; juce::String label; };
+    std::vector<Ghost> ghosts;
+    ghosts.reserve(merged.size());
+
+    // First: draw all markers/ovals, collect label anchors
+    for (auto& rp : merged)
     {
         const float px = (rp.x + 1.f) * 0.5f * w;
         const float py = (1.f - rp.y) * h;
-
-        // Suggested width: explicit, else heuristic (centre/front = mono, sides/back = wide)
         const float width = rp.w >= 0.f
             ? rp.w
             : juce::jlimit(0.3f, 2.0f, 0.4f + std::abs(rp.x) * 1.1f + rp.y * 0.7f);
-
-        // Ghost width oval (shows recommended stereo width)
         const float spread = width * 36.f;
         const float ovalH  = 5.f;
+
         g.setColour(cyan.withAlpha(0.07f));
         g.fillEllipse(px - spread, py - ovalH, spread * 2.f, ovalH * 2.f);
         g.setColour(cyan.withAlpha(0.35f));
         g.drawEllipse(px - spread, py - ovalH, spread * 2.f, ovalH * 2.f, 0.9f);
-        // end caps
         g.setColour(cyan.withAlpha(0.4f));
         for (float sx : { px - spread, px + spread })
             g.drawLine(sx, py - ovalH, sx, py + ovalH, 0.9f);
 
-        // Ghost marker ring
-        g.setColour(cyan.withAlpha(0.45f));
+        g.setColour(cyan.withAlpha(0.5f));
         g.drawEllipse(px - 5.f, py - 5.f, 10.f, 10.f, 1.f);
-        g.setColour(cyan.withAlpha(0.18f));
+        g.setColour(cyan.withAlpha(0.20f));
         g.fillEllipse(px - 4.f, py - 4.f, 8.f, 8.f);
-        g.setColour(cyan.withAlpha(0.6f));
+        g.setColour(cyan.withAlpha(0.7f));
         g.drawLine(px - 3.f, py, px + 3.f, py, 0.8f);
         g.drawLine(px, py - 3.f, px, py + 3.f, 0.8f);
 
-        // Label + width value
-        g.setFont(juce::Font(juce::FontOptions(8.5f).withStyle("Bold")));
-        g.setColour(cyan.withAlpha(0.75f));
-        g.drawText(rp.label, (int)(px - 34), (int)(py + 9), 68, 11,
-                   juce::Justification::centred);
-        g.setFont(juce::Font(juce::FontOptions(7.5f)));
-        g.setColour(cyan.withAlpha(0.5f));
-        g.drawText("w " + juce::String(width, 1), (int)(px - 34), (int)(py + 19), 68, 10,
-                   juce::Justification::centred);
+        ghosts.push_back({ px, py, spread, width, rp.label });
+    }
+
+    // Second: place single-line labels with anti-overlap (push down on collision)
+    const int   lw = 84, lh = 12;
+    std::vector<juce::Rectangle<int>> placed;
+    g.setFont(juce::Font(juce::FontOptions(8.5f).withStyle("Bold")));
+
+    // Draw nearer (front, larger py) labels first so they win the lower rows
+    std::sort(ghosts.begin(), ghosts.end(),
+              [](const Ghost& a, const Ghost& b){ return a.py > b.py; });
+
+    for (auto& gh : ghosts)
+    {
+        int lx = juce::jlimit(2, (int)w - lw - 2, (int)(gh.px - lw / 2));
+        int ly = (int)(gh.py + 8);
+        juce::Rectangle<int> r(lx, ly, lw, lh);
+
+        // Nudge down while overlapping an already-placed label
+        bool moved = true; int guard = 0;
+        while (moved && guard++ < 40) {
+            moved = false;
+            for (auto& p : placed)
+                if (r.intersects(p)) { r.translate(0, lh + 1); moved = true; break; }
+        }
+        placed.push_back(r);
+
+        // Connector line if the label drifted away from its marker
+        if (r.getY() > gh.py + 14) {
+            g.setColour(cyan.withAlpha(0.25f));
+            g.drawLine(gh.px, gh.py + 6.f, (float)r.getCentreX(), (float)r.getY(), 0.6f);
+        }
+
+        g.setColour(cyan.withAlpha(0.95f));
+        g.drawText(gh.label + "  " + juce::String(gh.width, 1),
+                   r, juce::Justification::centred);
     }
 }
 
@@ -530,14 +534,14 @@ void MultiCanvas::paint(juce::Graphics& g)
     // Zoom indicator (screen space, not transformed)
     if (zoom > 1.01f) {
         g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle("Bold")));
-        g.setColour(juce::Colour(0xff66ccff).withAlpha(0.8f));
+        g.setColour(juce::Colour(0xff2f8a9c).withAlpha(0.9f));
         g.drawText(juce::String(zoom, 1) + "x   (drag empty = pan · dbl-click = reset)",
                    8, getHeight() - 18, getWidth() - 16, 14,
                    juce::Justification::centredLeft);
     }
 
     // Outer border on top
-    g.setColour(juce::Colour(0xff180a40));
+    g.setColour(juce::Colour(0xffd2cfc8));
     g.drawRect(getLocalBounds(), 1);
 }
 

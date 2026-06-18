@@ -20,46 +20,46 @@ public:
     {
         const float w = getWidth(), h = getHeight();
 
-        // Background
-        g.setColour(juce::Colour(0xff080420));
+        // Background (light)
+        g.setColour(juce::Colour(0xfff1efe9));
         g.fillRect(getLocalBounds());
 
         // Header
         g.setFont(juce::Font(juce::FontOptions(8.f).withStyle("Bold")));
-        g.setColour(juce::Colour(0xff5a4090));
-        g.drawText("TRACKS", 0, 0, (int)w, 18, juce::Justification::centred);
-        g.setColour(juce::Colour(0xff1a0e44));
-        g.drawLine(4.f, 18.f, w - 4.f, 18.f, 0.5f);
+        g.setColour(juce::Colour(0xff9a978f));
+        g.drawText("TRACKS", 0, 4, (int)w, 16, juce::Justification::centred);
+        g.setColour(juce::Colour(0xffdcd9d2));
+        g.drawLine(4.f, 20.f, w - 4.f, 20.f, 1.f);
 
         // Rows
-        int y = 20;
+        int y = 22;
         for (auto& t : tracks) {
             const bool sel = t.id == selectedId;
             if (sel) {
-                g.setColour(t.colour.withAlpha(0.18f));
+                g.setColour(t.colour.withAlpha(0.16f));
                 g.fillRect(0, y, (int)w, kRowH);
-                g.setColour(t.colour.withAlpha(0.6f));
+                g.setColour(t.colour);
                 g.fillRect(0, y, 2, kRowH);
             }
             // Colour dot
-            g.setColour(t.colour.withAlpha(sel ? 1.f : 0.6f));
-            g.fillEllipse(6.f, y + (kRowH - 8) * 0.5f, 8.f, 8.f);
+            g.setColour(t.colour.withAlpha(sel ? 1.f : 0.7f));
+            g.fillEllipse(8.f, y + (kRowH - 8) * 0.5f, 8.f, 8.f);
             // Label
             g.setFont(juce::Font(juce::FontOptions(9.5f).withStyle(sel ? "Bold" : "Regular")));
-            g.setColour(sel ? juce::Colour(0xffddd6fe) : juce::Colour(0xff6a52a0));
-            g.drawText(t.label, 18, y, (int)w - 22, kRowH, juce::Justification::centredLeft);
+            g.setColour(sel ? juce::Colour(0xff2b2b2d) : juce::Colour(0xff8d8a85));
+            g.drawText(t.label, 20, y, (int)w - 24, kRowH, juce::Justification::centredLeft);
 
             y += kRowH;
         }
 
-        // Border right
-        g.setColour(juce::Colour(0xff1c1048));
+        // Hairline right
+        g.setColour(juce::Colour(0xffd9d6cf));
         g.drawLine(w - 1.f, 0.f, w - 1.f, h, 1.f);
     }
 
     void mouseDown(const juce::MouseEvent& e) override
     {
-        const int idx = (e.getPosition().y - 20) / kRowH;
+        const int idx = (e.getPosition().y - 22) / kRowH;
         if (idx >= 0 && idx < (int)tracks.size()) {
             const int newId = tracks[idx].id;
             selectedId = (selectedId == newId) ? -1 : newId;

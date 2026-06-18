@@ -42,7 +42,7 @@ SpatialPannerAudioProcessor::createParameters()
         juce::NormalisableRange<float>(0.f, 1.f, 0.001f), 0.f));
     p.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"width", 1}, "Stereo Width",
-        juce::NormalisableRange<float>(0.f, 2.f, 0.001f), 1.f));
+        juce::NormalisableRange<float>(0.f, 4.f, 0.001f), 1.f));
     return { p.begin(), p.end() };
 }
 

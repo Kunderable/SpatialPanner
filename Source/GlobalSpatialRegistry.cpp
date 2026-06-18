@@ -114,9 +114,15 @@ void GlobalSpatialRegistry::removeListener(int lid)
 
 void GlobalSpatialRegistry::fire()
 {
-    std::map<int, std::function<void()>> ls;
-    { juce::ScopedLock sl(cs); ls = listeners; }
-    juce::MessageManager::callAsync([ls = std::move(ls)]() {
-        for (auto& [id, fn] : ls) fn();
+    // Dispatch a single async tick. The listeners map is re-read at execution time
+    // (under the lock) rather than captured, so a listener that deregistered between
+    // dispatch and execution is never invoked with a dangling `this`. The registry
+    // is a process-lifetime singleton, so capturing it by reference is safe.
+    juce::MessageManager::callAsync([this]() {
+        std::vector<std::function<void()>> snapshot;
+        { juce::ScopedLock sl(cs);
+          snapshot.reserve(listeners.size());
+          for (auto& [id, fn] : listeners) snapshot.push_back(fn); }
+        for (auto& fn : snapshot) fn();
     });
 }

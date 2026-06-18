@@ -32,6 +32,16 @@ namespace GenreData
             { "BAND / SONG", "Jazz" },
             { "BAND / SONG", "Acoustic" },
             { "BAND / SONG", "Orchestral" },
+            { "GRAMMY ELECTRONIC", "Daft Punk" },
+            { "GRAMMY ELECTRONIC", "Skrillex" },
+            { "GRAMMY ELECTRONIC", "The Chemical Brothers" },
+            { "GRAMMY ELECTRONIC", "Flume" },
+            { "GRAMMY ELECTRONIC", "Kaytranada" },
+            { "GRAMMY ELECTRONIC", "Rufus Du Sol" },
+            { "GRAMMY ELECTRONIC", "Zedd" },
+            { "GRAMMY ELECTRONIC", "Justice" },
+            { "GRAMMY ELECTRONIC", "Fred again.." },
+            { "GRAMMY ELECTRONIC", "Jack U" },
         };
         return g;
     }
@@ -165,6 +175,82 @@ namespace GenreData
                 {"Viola", -0.20f,0.34f},{"Violin 1",-0.55f,0.28f},{"Violin 2",-0.30f,0.30f},
                 {"Brass",  0.35f,0.48f},{"Horns", 0.20f,0.52f}, {"Woodwind",0.00f,0.40f},
                 {"Flute",  0.30f,0.36f},{"Harp",-0.40f,0.42f},  {"Perc R",0.55f,0.50f},
+            };
+
+        // Grammy-winning electronic acts (Best Dance/Electronic). Signatures are
+        // approximate of their production style; educational references.
+        if (n == "Daft Punk")          // French house, vocoder lead, wide funk (Random Access Memories)
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Bass", 0.00f,0.11f,0.5f}, {"Clap",0.00f,0.18f,0.8f},
+                {"Hat",   0.25f,0.16f,0.7f}, {"Vocoder",0.00f,0.10f,0.9f},
+                {"Gtr L",-0.60f,0.28f,1.3f}, {"Gtr R", 0.60f,0.30f,1.3f},
+                {"Synth L",-0.80f,0.36f,1.7f},{"Synth R",0.80f,0.36f,1.7f},
+                {"Strings L",-0.95f,0.55f,2.0f},{"Strings R",0.95f,0.55f,2.0f},
+            };
+        if (n == "Skrillex")           // dubstep/bass, mono lows, screaming wide mids
+            return {
+                {"Sub",  0.00f,0.06f,0.3f}, {"Kick", 0.00f,0.04f,0.3f}, {"Snare",0.00f,0.20f,0.7f},
+                {"Hat",  0.20f,0.14f,0.7f}, {"Growl L",-0.55f,0.32f,1.6f},{"Growl R",0.55f,0.34f,1.6f},
+                {"Lead", 0.00f,0.40f,1.0f}, {"Vox Chop L",-0.75f,0.22f,1.7f},{"Vox Chop R",0.75f,0.22f,1.7f},
+                {"FX L",-0.95f,0.55f,2.0f}, {"FX R",0.95f,0.55f,2.0f},
+            };
+        if (n == "The Chemical Brothers") // big beat, breakbeats, psychedelic wide
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Bass", 0.00f,0.12f,0.6f},
+                {"Break L",-0.40f,0.22f,1.2f},{"Break R",0.40f,0.24f,1.2f},
+                {"Acid", 0.00f,0.30f,1.0f}, {"Stab L",-0.65f,0.34f,1.5f},{"Stab R",0.65f,0.36f,1.5f},
+                {"Vox", 0.00f,0.16f,0.8f}, {"Noise L",-0.90f,0.50f,1.9f},{"Noise R",0.90f,0.52f,1.9f},
+            };
+        if (n == "Flume")              // future bass, detuned wide chords, vocal chops
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"808", 0.00f,0.10f,0.4f}, {"Snare",0.00f,0.22f,0.7f},
+                {"Hat",   0.28f,0.16f,0.7f}, {"Chord L",-0.85f,0.36f,1.9f},{"Chord R",0.85f,0.36f,1.9f},
+                {"Lead", 0.00f,0.32f,1.0f}, {"Vox Chop L",-0.55f,0.24f,1.5f},{"Vox Chop R",0.55f,0.26f,1.5f},
+                {"Texture L",-0.95f,0.6f,2.0f},{"Texture R",0.95f,0.6f,2.0f},
+            };
+        if (n == "Kaytranada")         // house/soul groove, warm, mid-wide
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Bass", 0.00f,0.12f,0.5f}, {"Clap",0.00f,0.18f,0.8f},
+                {"Hat",   0.22f,0.15f,0.7f}, {"Perc",-0.30f,0.22f,1.0f},
+                {"Rhodes L",-0.50f,0.30f,1.3f},{"Rhodes R",0.50f,0.32f,1.3f},
+                {"Vocal", 0.00f,0.12f,0.7f}, {"Synth L",-0.72f,0.40f,1.6f},{"Synth R",0.72f,0.42f,1.6f},
+            };
+        if (n == "Rufus Du Sol")       // melodic/organic house, lush wide pads
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Sub",  0.00f,0.10f,0.3f}, {"Bass",0.00f,0.15f,0.5f},
+                {"Clap",  0.00f,0.20f,0.8f}, {"Hat",  0.26f,0.18f,0.7f},
+                {"Vocal", 0.00f,0.12f,0.7f}, {"Pluck L",-0.55f,0.34f,1.3f},{"Pluck R",0.55f,0.36f,1.3f},
+                {"Pad L",-0.90f,0.55f,1.9f}, {"Pad R", 0.90f,0.58f,1.9f}, {"Atmos",0.00f,0.78f,1.6f},
+            };
+        if (n == "Zedd")               // electro house, bright supersaw, festival wide
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Bass", 0.00f,0.14f,0.5f}, {"Clap",0.00f,0.20f,0.8f},
+                {"Hat",   0.30f,0.18f,0.7f}, {"Vocal",0.00f,0.10f,0.7f},
+                {"Supersaw L",-0.85f,0.36f,1.9f},{"Supersaw R",0.85f,0.36f,1.9f},
+                {"Pluck L",-0.55f,0.30f,1.3f},{"Pluck R",0.55f,0.32f,1.3f},
+                {"FX L",-0.95f,0.55f,2.0f}, {"FX R",0.95f,0.55f,2.0f},
+            };
+        if (n == "Justice")            // French electro, distorted bass, gritty wide
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Bass", 0.00f,0.12f,0.7f}, {"Clap",0.05f,0.20f,0.8f},
+                {"Hat",   0.28f,0.16f,0.7f}, {"Stab L",-0.65f,0.30f,1.5f},{"Stab R",0.65f,0.32f,1.5f},
+                {"Vocoder",0.00f,0.16f,0.9f}, {"Synth L",-0.85f,0.40f,1.8f},{"Synth R",0.85f,0.42f,1.8f},
+                {"Noise",0.00f,0.6f,1.6f},
+            };
+        if (n == "Fred again..")       // UK electronic, intimate vox samples, textured
+            return {
+                {"Kick",  0.00f,0.05f,0.4f}, {"Sub",  0.00f,0.10f,0.3f}, {"Snare",0.00f,0.20f,0.7f},
+                {"Hat",  -0.20f,0.16f,0.7f}, {"Vox Sample",0.00f,0.12f,0.9f},
+                {"Chop L",-0.55f,0.26f,1.4f},{"Chop R",0.55f,0.28f,1.4f},
+                {"Piano",-0.30f,0.34f,1.1f}, {"Pad L",-0.88f,0.55f,1.8f},{"Pad R",0.88f,0.55f,1.8f},
+            };
+        if (n == "Jack U")             // Skrillex x Diplo, trap/dance, hard-panned chaos
+            return {
+                {"808",  0.00f,0.05f,0.3f}, {"Kick", 0.00f,0.08f,0.3f}, {"Snare",0.00f,0.20f,0.7f},
+                {"Hat",  0.18f,0.13f,0.7f}, {"Vocal",0.00f,0.10f,0.7f},
+                {"Lead L",-0.70f,0.32f,1.6f},{"Lead R",0.70f,0.34f,1.6f},
+                {"Vox Chop L",-0.95f,0.20f,1.9f},{"Vox Chop R",0.95f,0.22f,1.9f},
+                {"FX",0.00f,0.55f,1.7f},
             };
 
         return {};
